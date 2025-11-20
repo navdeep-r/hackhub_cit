@@ -121,6 +121,15 @@ export const updateUserProfile = async (userId: string, data: Partial<User>): Pr
   return responseData.user;
 };
 
+// Get all students (for registration management)
+export const getAllStudents = async (): Promise<User[]> => {
+  const res = await fetch(`${API_BASE}/users/students`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch students');
+  }
+  return res.json();
+};
+
 // --- AI Services ---
 export const generateHackathonDescription = async (title: string, keywords: string): Promise<string> => {
   const res = await fetch(`${API_BASE}/ai/generate-description`, {

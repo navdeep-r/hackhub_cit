@@ -41,6 +41,7 @@ export interface User {
     department?: string;
     year?: string;
     registerNo?: string;
+    section?: string; // Added section field
     profilePicture?: string;
     bio?: string;
     skills?: string[];

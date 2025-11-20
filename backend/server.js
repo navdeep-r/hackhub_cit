@@ -228,7 +228,7 @@ app.put('/api/profile/:id', async (req, res) => {
       return res.status(500).json({ error: 'Database not connected' });
     }
 
-    const { name, department, year, registerNo, profilePicture, bio, skills } = req.body;
+    const { name, department, year, registerNo, section, profilePicture, bio, skills } = req.body;
 
     // Find user and update
     const user = await User.findById(req.params.id);
@@ -241,6 +241,7 @@ app.put('/api/profile/:id', async (req, res) => {
     if (department) user.department = department;
     if (year) user.year = year;
     if (registerNo) user.registerNo = registerNo;
+    if (section !== undefined) user.section = section;
     if (profilePicture !== undefined) user.profilePicture = profilePicture;
     if (bio !== undefined) user.bio = bio;
     if (skills !== undefined) user.skills = skills;
@@ -255,6 +256,22 @@ app.put('/api/profile/:id', async (req, res) => {
   }
 });
 
+// 8. GET all student users (for registration management)
+app.get('/api/users/students', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({ error: 'Database not connected' });
+    }
+
+    // Fetch all users with STUDENT role, excluding password
+    const students = await User.find({ role: 'STUDENT' }).select('-password').sort({ name: 1 });
+    res.json(students);
+  } catch (err) {
+    console.error('Error fetching students:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- AUTH ROUTES ---
 
 // Signup Route
@@ -265,7 +282,7 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
-    const { name, email, password, role, department, year, registerNo, secretCode } = req.body;
+    const { name, email, password, role, department, year, registerNo, section, secretCode } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -273,9 +290,9 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
-    // Validate student email
-    if (role === 'STUDENT' && !email.endsWith('@citchennai.net')) {
-      return res.status(400).json({ success: false, error: 'Students must use an @citchennai.net email address' });
+    // Validate citchennai.net email for all users
+    if (!email.endsWith('@citchennai.net')) {
+      return res.status(400).json({ success: false, error: 'All users must use an @citchennai.net email address' });
     }
 
     // Hash password
@@ -290,7 +307,8 @@ app.post('/api/auth/signup', async (req, res) => {
       role,
       department,
       year,
-      registerNo
+      registerNo,
+      section // Add section field
     });
 
     const savedUser = await newUser.save();

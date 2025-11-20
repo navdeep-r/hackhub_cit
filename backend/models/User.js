@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   department: String,
   year: String,
   registerNo: String,
-  registerNo: String,
+  section: String, // Added section field for students
   profilePicture: String, // Base64 string
   bio: String,
   skills: [String],

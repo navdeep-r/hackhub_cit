@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft, Info } from 'lucide-react';
 import { Hackathon, Registration, AnalyticsData } from '../types';
-import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, generateHackathonDescription, analyzeEngagementTrends } from '../services/api';
+import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, generateHackathonDescription, analyzeEngagementTrends, getAllStudents } from '../services/api';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
+import { RegistrationsModal } from './RegistrationsModal';
 
 const CATEGORY_OPTIONS = ['AI/ML/DS', 'WEB DEV', 'BLOCKCHAIN', 'IOT', 'CYBERSECURITY', 'MOBILE DEV', 'OTHER'];
 const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Government', 'Others'];
@@ -38,6 +39,10 @@ export const FacultyDashboard: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedHackathon, setSelectedHackathon] = useState<Hackathon | null>(null);
 
+  const [registrationsModalOpen, setRegistrationsModalOpen] = useState(false);
+  const [selectedHackathonForRegs, setSelectedHackathonForRegs] = useState<Hackathon | null>(null);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+
   const refreshData = async () => {
     try {
       console.log('Refreshing data...');
@@ -55,6 +60,14 @@ export const FacultyDashboard: React.FC = () => {
         console.error('Error fetching registrations (continuing anyway):', regError);
         // Set empty array for registrations to prevent undefined errors
         setRegistrations([]);
+      }
+
+      // Fetch all students for registration management
+      try {
+        const students = await getAllStudents();
+        setAllStudents(students);
+      } catch (err) {
+        console.warn('Failed to fetch students:', err);
       }
 
       console.log('Data refresh complete');
@@ -422,6 +435,15 @@ export const FacultyDashboard: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* View Registrations Button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedHackathonForRegs(h); setRegistrationsModalOpen(true); }}
+                    className="w-full mt-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/30"
+                  >
+                    <Users size={16} /> View Registrations
+                  </button>
+
+
                   {/* Mobile Categories Footer */}
                   <div className="flex md:hidden flex-wrap gap-2 mt-4 pt-4 border-t border-slate-800/50">
                     {h.categories && h.categories.slice(0, 3).map((cat, i) => (
@@ -647,6 +669,14 @@ export const FacultyDashboard: React.FC = () => {
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         hackathon={selectedHackathon}
+        registrations={registrations.filter(r => r.hackathonId === selectedHackathon?.id)}
+      />
+      <RegistrationsModal
+        isOpen={registrationsModalOpen}
+        onClose={() => setRegistrationsModalOpen(false)}
+        hackathon={selectedHackathonForRegs}
+        registrations={registrations}
+        allStudents={allStudents}
       />
     </div>
   );
