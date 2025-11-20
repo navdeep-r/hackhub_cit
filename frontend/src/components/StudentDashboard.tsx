@@ -68,18 +68,24 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         hackathonId: activeHackathon.id,
         studentId: user.id,
         studentName: user.name,
-        studentEmail: user.email,
+        email: user.email, // Match backend schema
+        studentEmail: user.email, // Keep for frontend consistency if needed
         registeredAt: Date.now()
       };
 
-      await registerStudent(newRegistration);
-      setRegistrations(prev => [...prev, newRegistration]);
+      try {
+        await registerStudent(newRegistration);
+        setRegistrations(prev => [...prev, newRegistration]);
 
-      triggerConfetti();
+        triggerConfetti();
 
-      // If external link exists, don't close modal immediately, let user click link
-      if (!activeHackathon.registrationLink) {
-        setActiveHackathon(null);
+        // If external link exists, don't close modal immediately, let user click link
+        if (!activeHackathon.registrationLink) {
+          setActiveHackathon(null);
+        }
+      } catch (error: any) {
+        console.error('Registration failed:', error);
+        alert('Failed to register: ' + (error.message || 'Unknown error'));
       }
     }
   };
@@ -201,60 +207,86 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           {displayedHackathons.map(h => {
             const isRegistered = myRegistrationIds.includes(h.id);
             return (
-              <div key={h.id} className="glass-panel rounded-2xl p-6 hover:bg-slate-800/40 transition-all duration-300 flex flex-col md:flex-row gap-6 group border border-slate-800 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/5">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wide rounded-full">
-                      {h.platform || 'Other'}
+              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-64 overflow-hidden border border-slate-800/60 cursor-pointer">
+                {/* Gradient Header / Side Panel */}
+                <div className="w-full md:w-56 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-6 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
+                      {h.platform}
                     </span>
                     {isNew(h.createdAt) && !isRegistered && (
-                      <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-wide rounded-full flex items-center gap-1">
-                        <Bell size={10} /> New
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        <Bell size={10} /> NEW
                       </span>
                     )}
                     {isRegistered && (
-                      <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wide rounded-full flex items-center gap-1">
-                        <CheckCircle size={10} /> Registered
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <CheckCircle size={10} /> GOING
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{h.title}</h3>
-                  <p className="text-slate-400 mb-5 line-clamp-2 leading-relaxed">{h.description}</p>
 
-                  <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-4">
-                    <span className="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800"><Calendar size={14} className="text-cyan-500" /> {h.date}</span>
-                    <span className="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800"><Trophy size={14} className="text-yellow-500" /> {h.prizePool}</span>
-                    {h.registrationDeadline && (
-                      <span className="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800 text-orange-400/80"><Clock size={14} className="text-orange-500" /> Deadline: {h.registrationDeadline}</span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {h.categories && h.categories.map(cat => (
-                      <span key={cat} className="text-xs text-slate-400 px-2 py-0.5 bg-slate-800/50 rounded border border-slate-700/50">{cat}</span>
+                  {/* Categories in Side Panel for Desktop */}
+                  <div className="hidden md:flex flex-wrap gap-2 mt-auto">
+                    {h.categories && h.categories.slice(0, 2).map((cat, i) => (
+                      <span key={i} className="px-2 py-1 bg-slate-950/30 text-slate-200 text-[10px] uppercase tracking-wide font-medium rounded-md border border-white/5">
+                        {cat}
+                      </span>
                     ))}
+                    {h.categories && h.categories.length > 2 && (
+                      <span className="px-2 py-1 bg-slate-950/30 text-slate-300 text-[10px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-center items-end min-w-[160px]">
-                  <button
-                    onClick={() => handleViewDetails(h)}
-                    disabled={isRegistered}
-                    className={`w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${isRegistered
-                      ? 'bg-slate-800 text-slate-500 cursor-default border border-slate-700'
-                      : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-[1.02]'
-                      }`}
-                  >
-                    {isRegistered ? (
-                      <>
-                        <CheckCircle size={16} /> View Details
-                      </>
-                    ) : (
-                      <>
-                        Register Now <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
+                {/* Card Body */}
+                <div className="p-6 flex-1 flex flex-col relative">
+                  <div className="pr-12">
+                    <h3 className="font-bold text-2xl text-white mb-2 line-clamp-1 group-hover:text-cyan-300 transition-colors">{h.title}</h3>
+                    <p className="text-slate-400 text-sm line-clamp-2 mb-4">{h.description || 'No description provided.'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm text-slate-400 mb-auto">
+                    <div className="flex items-center gap-3">
+                      <Calendar size={16} className="text-cyan-400 shrink-0" />
+                      <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <MapPin size={16} className="text-cyan-400 shrink-0" />
+                      <span className="truncate">{h.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Trophy size={16} className="text-yellow-400 shrink-0" />
+                      <span className="truncate">{h.prizePool}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock size={16} className="text-orange-400 shrink-0" />
+                      <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Row */}
+                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-800/50">
+                    <div className="flex md:hidden flex-wrap gap-2">
+                      {h.categories && h.categories.slice(0, 2).map((cat, i) => (
+                        <span key={i} className="px-2 py-1 bg-slate-800/50 text-slate-400 text-[10px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="ml-auto">
+                      {isRegistered ? (
+                        <button className="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-medium border border-slate-700 flex items-center gap-2 cursor-default">
+                          <CheckCircle size={16} /> Registered
+                        </button>
+                      ) : (
+                        <button className="px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-2 group-hover:scale-105">
+                          View Details <ArrowRight size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

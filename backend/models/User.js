@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema({
   department: String,
   year: String,
   registerNo: String,
+  registerNo: String,
+  profilePicture: String, // Base64 string
+  bio: String,
+  skills: [String],
   createdAt: { type: Date, default: Date.now }
 });
 
