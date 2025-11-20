@@ -157,8 +157,22 @@ app.post('/api/registrations', async (req, res) => {
       return res.status(500).json({ error: 'Database not connected' });
     }
     const newRegistration = new Registration(req.body);
-    await newRegistration.save();
-    res.status(201).json({ message: 'Registered successfully' });
+    const savedRegistration = await newRegistration.save();
+
+    // Transform to match frontend expectations
+    const transformedRegistration = {
+      id: savedRegistration._id.toString(),
+      hackathonId: savedRegistration.hackathonId ? savedRegistration.hackathonId.toString() : savedRegistration.hackathonId,
+      studentId: savedRegistration.studentId,
+      studentName: savedRegistration.studentName,
+      email: savedRegistration.email,
+      studentEmail: savedRegistration.email,
+      status: savedRegistration.status,
+      registeredAt: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now(),
+      timestamp: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now()
+    };
+
+    res.status(201).json({ message: 'Registered successfully', registration: transformedRegistration });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -172,7 +186,21 @@ app.get('/api/registrations', async (req, res) => {
       return res.json([]); // Return empty array if not connected
     }
     const registrations = await Registration.find();
-    res.json(registrations);
+
+    // Transform MongoDB documents to match frontend expectations
+    const transformedRegistrations = registrations.map(reg => ({
+      id: reg._id.toString(),
+      hackathonId: reg.hackathonId ? reg.hackathonId.toString() : reg.hackathonId,
+      studentId: reg.studentId,
+      studentName: reg.studentName,
+      email: reg.email,
+      studentEmail: reg.email, // Map email to studentEmail for backward compatibility
+      status: reg.status,
+      registeredAt: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now(),
+      timestamp: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now()
+    }));
+
+    res.json(transformedRegistrations);
   } catch (err) {
     console.error('Error fetching registrations:', err);
     res.status(500).json({ error: err.message });

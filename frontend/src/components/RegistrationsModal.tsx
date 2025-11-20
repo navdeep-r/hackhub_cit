@@ -35,13 +35,28 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
         const emails = new Set<string>();
         if (!hackathon) return { ids, emails };
 
+        console.log('[RegistrationsModal] Hackathon ID:', hackathon.id);
+        console.log('[RegistrationsModal] Total registrations:', registrations.length);
+
         registrations.forEach(reg => {
+            console.log('[RegistrationsModal] Checking registration:', {
+                regHackathonId: reg.hackathonId,
+                hackathonId: hackathon.id,
+                matches: reg.hackathonId === hackathon.id,
+                studentId: reg.studentId,
+                email: reg.email
+            });
+
             if (reg.hackathonId === hackathon.id) {
                 if (reg.studentId) ids.add(reg.studentId);
                 if (reg.email) emails.add(reg.email);
                 if (reg.studentEmail) emails.add(reg.studentEmail);
             }
         });
+
+        console.log('[RegistrationsModal] Matched student IDs:', Array.from(ids));
+        console.log('[RegistrationsModal] Matched emails:', Array.from(emails));
+
         return { ids, emails };
     }, [registrations, hackathon]);
 
@@ -63,6 +78,13 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
         // Filter by section
         if (sectionFilter !== 'All') {
             students = students.filter(s => s.section === sectionFilter);
+        }
+
+        console.log('[RegistrationsModal] Filtered students count:', students.length);
+        console.log('[RegistrationsModal] Filter:', filter, 'Section:', sectionFilter);
+        console.log('[RegistrationsModal] Total allStudents:', allStudents.length);
+        if (allStudents.length > 0) {
+            console.log('[RegistrationsModal] Sample allStudent:', allStudents[0]);
         }
 
         return students;

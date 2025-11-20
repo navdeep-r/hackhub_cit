@@ -55,6 +55,8 @@ export const FacultyDashboard: React.FC = () => {
       try {
         const rData = await getRegistrations();
         console.log('Fetched registrations:', rData);
+        console.log('Number of registrations:', rData.length);
+        console.log('Sample registration:', rData[0]);
         setRegistrations(rData);
       } catch (regError) {
         console.error('Error fetching registrations (continuing anyway):', regError);
@@ -65,6 +67,11 @@ export const FacultyDashboard: React.FC = () => {
       // Fetch all students for registration management
       try {
         const students = await getAllStudents();
+        console.log('Fetched students:', students);
+        console.log('Number of students:', students.length);
+        if (students.length > 0) {
+          console.log('Sample student:', students[0]);
+        }
         setAllStudents(students);
       } catch (err) {
         console.warn('Failed to fetch students:', err);
@@ -349,7 +356,7 @@ export const FacultyDashboard: React.FC = () => {
               </div>
             )}
             {hackathons.map(h => (
-              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:h-64 overflow-hidden border border-slate-800/60">
+              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:min-h-64 overflow-hidden border border-slate-800/60">
                 {/* Gradient Header / Side Panel */}
                 <div className="w-full md:w-56 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-slate-900/50 relative p-6 flex flex-col justify-between group-hover:from-indigo-600/30 group-hover:via-purple-600/30 transition-all shrink-0">
                   <div className="absolute top-0 right-0 p-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
@@ -669,7 +676,6 @@ export const FacultyDashboard: React.FC = () => {
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         hackathon={selectedHackathon}
-        registrations={registrations.filter(r => r.hackathonId === selectedHackathon?.id)}
       />
       <RegistrationsModal
         isOpen={registrationsModalOpen}
