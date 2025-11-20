@@ -6,9 +6,11 @@ import { UserRole, User } from './types';
 import { FacultyDashboard } from './components/FacultyDashboard';
 import { StudentDashboard } from './components/StudentDashboard';
 import { Login } from './components/Login';
+import { ProfileModal } from './components/ProfileModal';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
@@ -38,10 +40,10 @@ const App: React.FC = () => {
                 <div className="flex justify-between h-16">
                   <div className="flex items-center gap-3 animate-fade-in">
                     <div className="relative group">
-                       <div className={`absolute inset-0 rounded-lg blur opacity-40 group-hover:opacity-75 transition-opacity duration-500 ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}></div>
-                       <div className={`relative p-2 rounded-lg ${user.role === UserRole.FACULTY ? 'bg-indigo-950/80 border border-indigo-500/50' : 'bg-cyan-950/80 border border-cyan-500/50'} text-white transition-colors duration-300`}>
-                         <Code2 size={24} />
-                       </div>
+                      <div className={`absolute inset-0 rounded-lg blur opacity-40 group-hover:opacity-75 transition-opacity duration-500 ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}></div>
+                      <div className={`relative p-2 rounded-lg ${user.role === UserRole.FACULTY ? 'bg-indigo-950/80 border border-indigo-500/50' : 'bg-cyan-950/80 border border-cyan-500/50'} text-white transition-colors duration-300`}>
+                        <Code2 size={24} />
+                      </div>
                     </div>
                     <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
                       HackHub
@@ -49,18 +51,24 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4 animate-fade-in">
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-slate-800">
-                        <div className={`w-2 h-2 rounded-full ${user.role === UserRole.FACULTY ? 'bg-indigo-500 animate-pulse' : 'bg-cyan-500 animate-pulse'}`}></div>
-                        <span className="text-xs font-medium text-slate-400">
-                            {user.name} ({user.role === UserRole.FACULTY ? 'Faculty' : 'Student'})
-                        </span>
+                    <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setIsProfileOpen(true)}>
+                      {user.profilePicture ? (
+                        <img src={user.profilePicture} alt="Profile" className="w-6 h-6 rounded-full object-cover border border-slate-600" />
+                      ) : (
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}>
+                          {user.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="text-xs font-medium text-slate-400">
+                        {user.name} ({user.role === UserRole.FACULTY ? 'Faculty' : 'Student'})
+                      </span>
                     </div>
-                    
-                    <button 
+
+                    <button
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
                     >
-                      <LogOut size={18}/>
+                      <LogOut size={18} />
                       <span className="hidden sm:inline">Sign Out</span>
                     </button>
                   </div>
@@ -70,24 +78,32 @@ const App: React.FC = () => {
 
             {/* Main Content Area */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-              {user.role === UserRole.FACULTY ? <FacultyDashboard /> : <StudentDashboard />}
+              {user.role === UserRole.FACULTY ? <FacultyDashboard /> : <StudentDashboard user={user} />}
             </main>
 
             {/* Footer */}
             <footer className="border-t border-white/5 py-8 mt-auto">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
-                    <p>&copy; {new Date().getFullYear()} HackHub. Connecting Campus Innovators.</p>
-                    <div className="flex gap-6">
-                        <a href="#" className="hover:text-blue-400 transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-blue-400 transition-colors">Terms</a>
-                        <a href="#" className="hover:text-blue-400 transition-colors">Support</a>
-                    </div>
+              <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
+                <p>&copy; {new Date().getFullYear()} HackHub. Connecting Campus Innovators.</p>
+                <div className="flex gap-6">
+                  <a href="#" className="hover:text-blue-400 transition-colors">Privacy</a>
+                  <a href="#" className="hover:text-blue-400 transition-colors">Terms</a>
+                  <a href="#" className="hover:text-blue-400 transition-colors">Support</a>
                 </div>
+              </div>
             </footer>
           </>
         )}
+        {user && (
+          <ProfileModal
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+            user={user}
+            onUpdateUser={setUser}
+          />
+        )}
       </div>
-    </Router>
+    </Router >
   );
 };
 

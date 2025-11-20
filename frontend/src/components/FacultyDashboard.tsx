@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft, Info } from 'lucide-react';
 import { Hackathon, Registration, AnalyticsData } from '../types';
 import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, generateHackathonDescription, analyzeEngagementTrends } from '../services/api';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { HackathonDetailsModal } from './HackathonDetailsModal';
 
 const CATEGORY_OPTIONS = ['AI/ML/DS', 'WEB DEV', 'BLOCKCHAIN', 'IOT', 'CYBERSECURITY', 'MOBILE DEV', 'OTHER'];
 const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Government', 'Others'];
@@ -12,10 +14,10 @@ export const FacultyDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'analytics'>('list');
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  
+
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
+
   const [formData, setFormData] = useState<Partial<Hackathon>>({
     title: '',
     description: '',
@@ -30,6 +32,12 @@ export const FacultyDashboard: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [hackathonToDelete, setHackathonToDelete] = useState<string | null>(null);
+
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedHackathon, setSelectedHackathon] = useState<Hackathon | null>(null);
+
   const refreshData = async () => {
     try {
       console.log('Refreshing data...');
@@ -37,7 +45,7 @@ export const FacultyDashboard: React.FC = () => {
       console.log('Fetched hackathons:', hData);
       console.log('Setting hackathons state with', hData.length, 'items');
       setHackathons(hData);
-      
+
       // Try to fetch registrations but don't let it block hackathon display
       try {
         const rData = await getRegistrations();
@@ -48,7 +56,7 @@ export const FacultyDashboard: React.FC = () => {
         // Set empty array for registrations to prevent undefined errors
         setRegistrations([]);
       }
-      
+
       console.log('Data refresh complete');
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -65,10 +73,10 @@ export const FacultyDashboard: React.FC = () => {
   }, [hackathons]);
 
   const handleSwitchToCreate = (reset = true) => {
-      if (reset) {
-          setFormData({ platform: 'Unstop', categories: [] });
-      }
-      setActiveTab('create');
+    if (reset) {
+      setFormData({ platform: 'Unstop', categories: [] });
+    }
+    setActiveTab('create');
   };
 
   const handleEdit = (h: Hackathon) => {
@@ -78,7 +86,7 @@ export const FacultyDashboard: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.title || !formData.date) return;
-    
+
     try {
       const newHackathon: Hackathon = {
         id: formData.id || Date.now().toString(),
@@ -93,7 +101,7 @@ export const FacultyDashboard: React.FC = () => {
         createdAt: formData.createdAt || Date.now(),
         impressions: formData.impressions || 0,
         categories: formData.categories || [],
-        tags: formData.categories || [] 
+        tags: formData.categories || []
       };
 
       const savedHackathon = await saveHackathon(newHackathon);
@@ -110,12 +118,19 @@ export const FacultyDashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this hackathon?')) {
+  const handleDelete = (id: string) => {
+    setHackathonToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (hackathonToDelete) {
       try {
-        await deleteHackathon(id);
+        await deleteHackathon(hackathonToDelete);
         await refreshData();
-      } catch (error) {
+        setDeleteModalOpen(false);
+        setHackathonToDelete(null);
+      } catch (error: any) {
         console.error('Error deleting hackathon:', error);
         alert('Failed to delete hackathon: ' + (error.message || 'Unknown error'));
       }
@@ -154,7 +169,7 @@ export const FacultyDashboard: React.FC = () => {
   const handleAnalyzeTrends = async () => {
     setIsAnalyzing(true);
     const data = prepareAnalytics();
-    const jsonStr = JSON.stringify(data.map(d => ({ title: d.hackathonTitle, ratio: d.registrations/(d.impressions || 1) })));
+    const jsonStr = JSON.stringify(data.map(d => ({ title: d.hackathonTitle, ratio: d.registrations / (d.impressions || 1) })));
     try {
       const insight = await analyzeEngagementTrends(jsonStr);
       setAiAnalysis(insight);
@@ -198,31 +213,28 @@ export const FacultyDashboard: React.FC = () => {
       <div className="flex p-1 bg-slate-900/80 rounded-xl w-fit border border-slate-800 animate-slide-up-delay-1">
         <button
           onClick={() => setActiveTab('list')}
-          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
-            activeTab === 'list'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'list'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
+            : 'text-slate-400 hover:text-slate-200'
+            }`}
         >
           <LayoutDashboard size={16} /> Hackathons
         </button>
         <button
           onClick={() => handleSwitchToCreate(true)}
-          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
-            activeTab === 'create'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'create'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
+            : 'text-slate-400 hover:text-slate-200'
+            }`}
         >
           <Plus size={16} /> Create New
         </button>
         <button
           onClick={() => setActiveTab('analytics')}
-          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
-            activeTab === 'analytics'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+          className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'analytics'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
+            : 'text-slate-400 hover:text-slate-200'
+            }`}
         >
           <BarChart3 size={16} /> Analytics
         </button>
@@ -235,7 +247,7 @@ export const FacultyDashboard: React.FC = () => {
             <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-100">
               <TrendingUp size={20} className="text-indigo-400" /> Engagement Analytics
             </h3>
-            <button 
+            <button
               onClick={handleAnalyzeTrends}
               disabled={isAnalyzing}
               className="px-3 py-1.5 text-sm rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/30 flex items-center gap-2 transition-all"
@@ -243,7 +255,7 @@ export const FacultyDashboard: React.FC = () => {
               <Sparkles size={16} /> {isAnalyzing ? 'Analyzing...' : 'Get AI Insights'}
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Volume Chart */}
             <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
@@ -254,7 +266,7 @@ export const FacultyDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                     <XAxis dataKey="hackathonTitle" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
                       itemStyle={{ color: '#f8fafc' }}
                       cursor={{ fill: '#334155', opacity: 0.4 }}
@@ -275,14 +287,14 @@ export const FacultyDashboard: React.FC = () => {
                   <AreaChart data={prepareTrendData()}>
                     <defs>
                       <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                     <XAxis dataKey="shortDate" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
                       itemStyle={{ color: '#34d399' }}
                       cursor={{ stroke: '#334155' }}
@@ -290,14 +302,14 @@ export const FacultyDashboard: React.FC = () => {
                       labelFormatter={(label) => `Date: ${label}`}
                     />
                     <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="rate" 
+                    <Area
+                      type="monotone"
+                      dataKey="rate"
                       name="Success Rate (%)"
-                      stroke="#10b981" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#colorRate)" 
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorRate)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -307,8 +319,8 @@ export const FacultyDashboard: React.FC = () => {
 
           {aiAnalysis && (
             <div className="mt-6 p-4 bg-indigo-950/40 text-indigo-200 rounded-xl text-sm border border-indigo-500/30 flex gap-3 items-start animate-fade-in">
-               <Sparkles size={18} className="mt-0.5 flex-shrink-0 text-indigo-400" />
-               <p>{aiAnalysis}</p>
+              <Sparkles size={18} className="mt-0.5 flex-shrink-0 text-indigo-400" />
+              <p>{aiAnalysis}</p>
             </div>
           )}
         </section>
@@ -317,63 +329,107 @@ export const FacultyDashboard: React.FC = () => {
       {/* 2. List View Tab */}
       {activeTab === 'list' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {hackathons.length === 0 && (
-                <div className="col-span-full text-center py-16 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
-                    <p>No hackathons created yet. Switch to the "Create New" tab to get started.</p>
-                </div>
+              <div className="col-span-full text-center py-16 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
+                <p>No hackathons created yet. Switch to the "Create New" tab to get started.</p>
+              </div>
             )}
             {hackathons.map(h => (
-              <div key={h.id} className="glass-panel rounded-2xl p-6 relative group glass-card transition-all hover:-translate-y-1">
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  <button onClick={() => handleEdit(h)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Edit Hackathon">
-                    <Edit size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(h.id)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete Hackathon">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-xl text-white pr-12 truncate">{h.title}</h3>
-                </div>
-                <div className="mb-4">
-                   <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{h.platform}</span>
-                </div>
-                
-                <div className="flex items-center gap-4 mb-6">
-                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/50 text-xs text-slate-300 border border-slate-700">
-                        <Eye size={14} className="text-indigo-400"/> {h.impressions}
-                     </div>
-                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/50 text-xs text-slate-300 border border-slate-700">
-                        <Users size={14} className="text-cyan-400"/> {registrations.filter(r => r.hackathonId === h.id).length}
-                     </div>
-                </div>
-
-                <div className="space-y-3 text-sm text-slate-400 mb-6">
-                  <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded bg-slate-800 text-slate-500">
-                          <Calendar size={14} />
-                      </div>
-                      <span>{h.date}</span>
+              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:h-64 overflow-hidden border border-slate-800/60">
+                {/* Gradient Header / Side Panel */}
+                <div className="w-full md:w-56 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-slate-900/50 relative p-6 flex flex-col justify-between group-hover:from-indigo-600/30 group-hover:via-purple-600/30 transition-all shrink-0">
+                  <div className="absolute top-0 right-0 p-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
+                    {/* Mobile Actions */}
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Info size={14} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Edit size={14} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded bg-slate-800 text-slate-500">
-                          <MapPin size={14} />
-                      </div>
-                      <span className="truncate">{h.location}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-auto">
-                  {h.categories && h.categories.slice(0, 3).map((cat, i) => (
-                    <span key={i} className="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs rounded-full border border-slate-700">
-                      {cat}
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
+                      {h.platform}
                     </span>
-                  ))}
-                  {h.categories && h.categories.length > 3 && (
-                      <span className="px-2.5 py-1 bg-slate-800 text-slate-400 text-xs rounded-full border border-slate-700">+{h.categories.length - 3}</span>
-                  )}
+                  </div>
+
+                  {/* Categories in Side Panel for Desktop */}
+                  <div className="hidden md:flex flex-wrap gap-2 mt-auto">
+                    {h.categories && h.categories.slice(0, 2).map((cat, i) => (
+                      <span key={i} className="px-2 py-1 bg-slate-950/30 text-slate-200 text-[10px] uppercase tracking-wide font-medium rounded-md border border-white/5">
+                        {cat}
+                      </span>
+                    ))}
+                    {h.categories && h.categories.length > 2 && (
+                      <span className="px-2 py-1 bg-slate-950/30 text-slate-300 text-[10px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-6 flex-1 flex flex-col relative">
+                  {/* Desktop Actions */}
+                  <div className="absolute top-4 right-4 hidden md:flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" title="View Details">
+                      <Info size={16} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Edit Hackathon">
+                      <Edit size={16} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete Hackathon">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="pr-12">
+                    <h3 className="font-bold text-2xl text-white mb-2 line-clamp-1 group-hover:text-indigo-300 transition-colors">{h.title}</h3>
+                    <p className="text-slate-400 text-sm line-clamp-2 mb-4">{h.description || 'No description provided.'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm text-slate-400 mb-auto">
+                    <div className="flex items-center gap-3">
+                      <Calendar size={16} className="text-indigo-400 shrink-0" />
+                      <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <MapPin size={16} className="text-indigo-400 shrink-0" />
+                      <span className="truncate">{h.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3 col-span-2">
+                      <Clock size={16} className="text-indigo-400 shrink-0" />
+                      <span className="truncate">Deadline: {new Date(h.registrationDeadline).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="flex gap-4 mt-6 pt-4 border-t border-slate-800/50">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-500 font-medium">Impressions:</span>
+                      <div className="flex items-center gap-1 text-slate-200 font-semibold">
+                        <Eye size={14} className="text-indigo-400" /> {h.impressions}
+                      </div>
+                    </div>
+                    <div className="h-4 w-px bg-slate-800 my-auto"></div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-500 font-medium">Registrations:</span>
+                      <div className="flex items-center gap-1 text-slate-200 font-semibold">
+                        <Users size={14} className="text-cyan-400" /> {registrations.filter(r => r.hackathonId === h.id).length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Categories Footer */}
+                  <div className="flex md:hidden flex-wrap gap-2 mt-4 pt-4 border-t border-slate-800/50">
+                    {h.categories && h.categories.slice(0, 3).map((cat, i) => (
+                      <span key={i} className="px-2 py-1 bg-slate-800/50 text-slate-400 text-[10px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
@@ -387,163 +443,162 @@ export const FacultyDashboard: React.FC = () => {
           <div className="glass-panel rounded-2xl p-8 border border-slate-700 shadow-2xl">
             <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
               <div>
-                  <h3 className="text-2xl font-bold text-white">{formData.id ? 'Edit Hackathon' : 'Create New Hackathon'}</h3>
-                  <p className="text-slate-400 text-sm mt-1">Fill in the details to launch or update an event.</p>
+                <h3 className="text-2xl font-bold text-white">{formData.id ? 'Edit Hackathon' : 'Create New Hackathon'}</h3>
+                <p className="text-slate-400 text-sm mt-1">Fill in the details to launch or update an event.</p>
               </div>
               {formData.id && (
-                  <button 
-                    onClick={() => setActiveTab('list')} 
-                    className="flex items-center gap-2 text-slate-400 hover:text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
-                  >
-                    <ArrowLeft size={16} /> Back to List
-                  </button>
+                <button
+                  onClick={() => setActiveTab('list')}
+                  className="flex items-center gap-2 text-slate-400 hover:text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <ArrowLeft size={16} /> Back to List
+                </button>
               )}
             </div>
-            
+
             <div className="space-y-6">
               {/* Row 1 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">Title</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     value={formData.title || ''}
-                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. HackTheFuture 2024"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">Platform</label>
                   <div className="relative">
-                      <Globe className="absolute left-3 top-3.5 text-slate-500" size={16} />
-                      <select 
-                        className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                        value={formData.platform || 'Others'}
-                        onChange={e => setFormData({...formData, platform: e.target.value})}
-                      >
-                        {PLATFORM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
+                    <Globe className="absolute left-3 top-3.5 text-slate-500" size={16} />
+                    <select
+                      className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                      value={formData.platform || 'Others'}
+                      onChange={e => setFormData({ ...formData, platform: e.target.value })}
+                    >
+                      {PLATFORM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
 
               {/* Row 2: Dates */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">Event Date</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3.5 text-slate-500" size={16} />
-                        <input 
-                            type="date" 
-                            className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
-                            value={formData.date || ''}
-                            onChange={e => setFormData({...formData, date: e.target.value})}
-                        />
-                      </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Event Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3.5 text-slate-500" size={16} />
+                    <input
+                      type="date"
+                      className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
+                      value={formData.date || ''}
+                      onChange={e => setFormData({ ...formData, date: e.target.value })}
+                    />
                   </div>
-                  <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">Registration Deadline</label>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-3.5 text-slate-500" size={16} />
-                        <input 
-                            type="date" 
-                            className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
-                            value={formData.registrationDeadline || ''}
-                            onChange={e => setFormData({...formData, registrationDeadline: e.target.value})}
-                        />
-                      </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Registration Deadline</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-3.5 text-slate-500" size={16} />
+                    <input
+                      type="date"
+                      className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
+                      value={formData.registrationDeadline || ''}
+                      onChange={e => setFormData({ ...formData, registrationDeadline: e.target.value })}
+                    />
                   </div>
+                </div>
               </div>
 
               {/* Description with AI */}
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2 flex justify-between items-center">
                   Description
-                  <button 
-                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-2 py-1 rounded bg-indigo-950/50 border border-indigo-900" 
+                  <button
+                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-2 py-1 rounded bg-indigo-950/50 border border-indigo-900"
                     onClick={() => document.getElementById('ai-panel')?.classList.toggle('hidden')}
                   >
-                     <Sparkles size={12} /> AI Assistant
+                    <Sparkles size={12} /> AI Assistant
                   </button>
                 </label>
-                
+
                 {/* AI Assistant Panel */}
                 <div id="ai-panel" className="hidden mb-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            placeholder="Keywords (e.g. 'Beginner friendly, Web3, 24h')"
-                            className="flex-1 p-2 text-sm bg-slate-950 border border-slate-700 rounded-lg text-white focus:border-indigo-500 outline-none"
-                            value={aiPrompt}
-                            onChange={(e) => setAiPrompt(e.target.value)}
-                        />
-                        <button 
-                            onClick={handleGenerateDescription}
-                            disabled={isGenerating || !formData.title}
-                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {isGenerating ? '...' : 'Generate'}
-                        </button>
-                    </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Keywords (e.g. 'Beginner friendly, Web3, 24h')"
+                      className="flex-1 p-2 text-sm bg-slate-950 border border-slate-700 rounded-lg text-white focus:border-indigo-500 outline-none"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                    />
+                    <button
+                      onClick={handleGenerateDescription}
+                      disabled={isGenerating || !formData.title}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isGenerating ? '...' : 'Generate'}
+                    </button>
+                  </div>
                 </div>
 
-                <textarea 
+                <textarea
                   rows={6}
                   className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm leading-relaxed resize-none"
                   value={formData.description || ''}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter hackathon details..."
                 />
               </div>
 
               {/* Categories */}
               <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-sm font-medium text-slate-400">Categories</label>
-                    <button onClick={toggleSelectAllCategories} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-                        {formData.categories?.length === CATEGORY_OPTIONS.length ? <CheckSquare size={12}/> : <Square size={12}/>} Select All
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                      {CATEGORY_OPTIONS.map(cat => {
-                          const isSelected = formData.categories?.includes(cat);
-                          return (
-                              <button
-                                key={cat}
-                                onClick={() => toggleCategory(cat)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                    isSelected 
-                                    ? 'bg-indigo-600 border-indigo-500 text-white' 
-                                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                                }`}
-                              >
-                                  {cat}
-                              </button>
-                          )
-                      })}
-                  </div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-sm font-medium text-slate-400">Categories</label>
+                  <button onClick={toggleSelectAllCategories} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    {formData.categories?.length === CATEGORY_OPTIONS.length ? <CheckSquare size={12} /> : <Square size={12} />} Select All
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_OPTIONS.map(cat => {
+                    const isSelected = formData.categories?.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => toggleCategory(cat)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${isSelected
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+                          }`}
+                      >
+                        {cat}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Row 3: Links and Prizes */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">Prize Pool</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     value={formData.prizePool || ''}
-                    onChange={e => setFormData({...formData, prizePool: e.target.value})}
+                    onChange={e => setFormData({ ...formData, prizePool: e.target.value })}
                     placeholder="e.g. $5,000"
                   />
                 </div>
-                 <div>
+                <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">Location</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     value={formData.location || ''}
-                    onChange={e => setFormData({...formData, location: e.target.value})}
+                    onChange={e => setFormData({ ...formData, location: e.target.value })}
                     placeholder="Physical location or 'Online'"
                   />
                 </div>
@@ -551,25 +606,25 @@ export const FacultyDashboard: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-400 mb-2">Registration Link</label>
                   <div className="relative">
                     <LinkIcon className="absolute left-3 top-3.5 text-slate-500" size={16} />
-                    <input 
-                        type="url" 
-                        className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        value={formData.registrationLink || ''}
-                        onChange={e => setFormData({...formData, registrationLink: e.target.value})}
-                        placeholder="https://..."
+                    <input
+                      type="url"
+                      className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      value={formData.registrationLink || ''}
+                      onChange={e => setFormData({ ...formData, registrationLink: e.target.value })}
+                      placeholder="https://..."
                     />
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-800">
-                <button 
+                <button
                   onClick={() => { setActiveTab('list'); setFormData({ platform: 'Unstop', categories: [] }); }}
                   className="px-6 py-3 text-slate-300 hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSave}
                   className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-900/40 transition-all font-bold flex items-center gap-2"
                 >
@@ -580,6 +635,19 @@ export const FacultyDashboard: React.FC = () => {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Hackathon"
+        message="Are you sure you want to delete this hackathon? This will remove all associated data and cannot be undone."
+        itemName={hackathons.find(h => h.id === hackathonToDelete)?.title}
+      />
+      <HackathonDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        hackathon={selectedHackathon}
+      />
     </div>
   );
 };

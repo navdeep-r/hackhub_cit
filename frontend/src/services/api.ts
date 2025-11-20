@@ -5,36 +5,36 @@ const API_BASE = '/api'; // Proxied via Vite
 
 // --- Auth ---
 export const loginUser = async (credentials: any): Promise<User> => {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    return data.user;
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.user;
 };
 
 export const signupUser = async (userData: any): Promise<User> => {
-    const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    return data.user;
+  const res = await fetch(`${API_BASE}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.user;
 };
 
 export const googleAuthMock = async (email: string, name: string): Promise<User> => {
-    const res = await fetch(`${API_BASE}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    return data.user;
+  const res = await fetch(`${API_BASE}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.user;
 };
 
 // --- Hackathons ---
@@ -52,12 +52,12 @@ export const saveHackathon = async (hackathon: Hackathon): Promise<Hackathon> =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(hackathon)
   });
-  
+
   if (!res.ok) {
     const errorData = await res.json();
     throw new Error(errorData.error || 'Failed to save hackathon');
   }
-  
+
   return res.json();
 };
 
@@ -99,12 +99,26 @@ export const registerStudent = async (registration: Registration): Promise<void>
 };
 
 // --- Profile ---
-export const getStudentProfile = async (): Promise<StudentProfile> => {
-  const res = await fetch(`${API_BASE}/profile`);
+export const getStudentProfile = async (userId: string): Promise<User> => {
+  const res = await fetch(`${API_BASE}/profile/${userId}`);
   if (!res.ok) {
-    throw new Error('Failed to fetch student profile');
+    throw new Error('Failed to fetch user profile');
   }
   return res.json();
+};
+
+export const updateUserProfile = async (userId: string, data: Partial<User>): Promise<User> => {
+  const res = await fetch(`${API_BASE}/profile/${userId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  const responseData = await res.json();
+  if (!responseData.success) {
+    throw new Error(responseData.error || 'Failed to update profile');
+  }
+  return responseData.user;
 };
 
 // --- AI Services ---

@@ -15,11 +15,15 @@ export interface Hackathon {
 }
 
 export interface Registration {
-    id: string;
+    id?: string;
     hackathonId: string;
-    studentId: string;
-    status: string;
-    timestamp: number;
+    studentId?: string;
+    status?: string;
+    timestamp?: number;
+    studentName?: string;
+    studentEmail?: string;
+    email?: string;
+    registeredAt?: number;
     [key: string]: any;
 }
 
@@ -34,6 +38,12 @@ export interface User {
     name: string;
     email: string;
     role: UserRole;
+    department?: string;
+    year?: string;
+    registerNo?: string;
+    profilePicture?: string;
+    bio?: string;
+    skills?: string[];
     [key: string]: any;
 }
 
