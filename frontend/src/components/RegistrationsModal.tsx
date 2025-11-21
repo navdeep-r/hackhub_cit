@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Download, Users, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { X, Download, Users, ChevronLeft, ChevronRight, Filter, LayoutGrid, List, Building2, GraduationCap } from 'lucide-react';
 import { Hackathon, Registration, User } from '../types';
 
 interface RegistrationsModalProps {
@@ -11,7 +11,22 @@ interface RegistrationsModalProps {
 }
 
 const ITEMS_PER_PAGE = 20;
-const SECTIONS = ['All', 'A', 'B', 'C', 'D', 'E'];
+
+// Department-specific section ranges
+const getSectionsForDepartment = (department: string) => {
+    if (!department) return ['All', 'A', 'B', 'C', 'D', 'E', 'F'];
+    
+    const dept = department.toLowerCase();
+    if (dept.includes('cse')) {
+        return ['All', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
+    } else if (dept.includes('aids') || dept.includes('aiml')) {
+        return ['All', 'A', 'B', 'C'];
+    } else if (dept.includes('cyber')) {
+        return ['All', '1'];
+    } else {
+        return ['All', 'A', 'B', 'C', 'D', 'E', 'F'];
+    }
+};
 
 export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
     isOpen,
@@ -22,21 +37,34 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
 }) => {
     const [filter, setFilter] = useState<'all' | 'registered' | 'unregistered'>('registered');
     const [sectionFilter, setSectionFilter] = useState<string>('All');
+    const [departmentFilter, setDepartmentFilter] = useState<string>('All');
+    const [viewMode, setViewMode] = useState<'table' | 'grouped'>('grouped');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [filter, sectionFilter]);
+    }, [filter, sectionFilter, departmentFilter]);
+
+    // Get unique departments
+    const departments = useMemo(() => {
+        const depts = new Set<string>();
+        allStudents.forEach(s => {
+            if (s.department) depts.add(s.department);
+        });
+        return ['All', ...Array.from(depts).sort()];
+    }, [allStudents]);
+
+    // Get sections based on selected department
+    const sections = useMemo(() => {
+        return getSectionsForDepartment(departmentFilter === 'All' ? '' : departmentFilter);
+    }, [departmentFilter]);
 
     // Get registered student IDs and emails for this hackathon
     const registeredIds = useMemo(() => {
         const ids = new Set<string>();
         const emails = new Set<string>();
         if (!hackathon) return { ids, emails };
-
-        console.log('[RegistrationsModal] Hackathon ID:', hackathon.id);
-        console.log('[RegistrationsModal] Total registrations:', registrations.length);
 
         registrations.forEach(reg => {
             console.log('[RegistrationsModal] Checking registration:', {
@@ -53,9 +81,6 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                 if (reg.studentEmail) emails.add(reg.studentEmail);
             }
         });
-
-        console.log('[RegistrationsModal] Matched student IDs:', Array.from(ids));
-        console.log('[RegistrationsModal] Matched emails:', Array.from(emails));
 
         return { ids, emails };
     }, [registrations, hackathon]);
@@ -80,15 +105,30 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
             students = students.filter(s => s.section === sectionFilter);
         }
 
-        console.log('[RegistrationsModal] Filtered students count:', students.length);
-        console.log('[RegistrationsModal] Filter:', filter, 'Section:', sectionFilter);
-        console.log('[RegistrationsModal] Total allStudents:', allStudents.length);
-        if (allStudents.length > 0) {
-            console.log('[RegistrationsModal] Sample allStudent:', allStudents[0]);
+        // Filter by department
+        if (departmentFilter !== 'All') {
+            students = students.filter(s => s.department === departmentFilter);
         }
 
         return students;
-    }, [allStudents, filter, sectionFilter, registeredIds]);
+    }, [allStudents, filter, sectionFilter, departmentFilter, registeredIds]);
+
+    // Group by department and section
+    const groupedRegistrations = useMemo(() => {
+        const grouped: Record<string, Record<string, User[]>> = {};
+
+        filteredStudents.forEach(student => {
+            const dept = student.department || 'Unknown';
+            const section = student.section || 'Unknown';
+
+            if (!grouped[dept]) grouped[dept] = {};
+            if (!grouped[dept][section]) grouped[dept][section] = [];
+
+            grouped[dept][section].push(student);
+        });
+
+        return grouped;
+    }, [filteredStudents]);
 
     // Pagination
     const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
@@ -151,52 +191,121 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                 </div>
 
                 {/* Filters */}
-                <div className="p-6 border-b border-slate-800 flex flex-wrap gap-4 items-center">
-                    <div className="flex items-center gap-2">
-                        <Filter size={18} className="text-slate-500" />
-                        <span className="text-sm font-medium text-slate-400">Filter:</span>
+                <div className="p-6 border-b border-slate-800 space-y-4">
+                    {/* Statistics Summary */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/30">
+                            <p className="text-xs text-slate-400 mb-1">Total Registrations</p>
+                            <p className="text-2xl font-bold text-white">{filter === 'registered' ? filteredStudents.length : registeredIds.ids.size + registeredIds.emails.size}</p>
+                        </div>
+                        <div className="bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/30">
+                            <p className="text-xs text-slate-400 mb-1">Departments</p>
+                            <p className="text-2xl font-bold text-white">{Object.keys(groupedRegistrations).length}</p>
+                        </div>
+                        <div className="bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/30">
+                            <p className="text-xs text-slate-400 mb-1">Sections</p>
+                            <p className="text-2xl font-bold text-white">
+                                {Object.values(groupedRegistrations).reduce((acc, dept) => acc + Object.keys(dept).length, 0)}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* Registration Status Filter */}
-                    <div className="flex gap-2">
-                        {(['all', 'registered', 'unregistered'] as const).map(f => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f
+                    <div className="flex flex-wrap gap-4 items-center">
+                        <div className="flex items-center gap-2">
+                            <Filter size={18} className="text-slate-500" />
+                            <span className="text-sm font-medium text-slate-400">Filter:</span>
+                        </div>
+
+                        {/* Registration Status Filter */}
+                        <div className="flex gap-2">
+                            {(['all', 'registered', 'unregistered'] as const).map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f
                                         ? 'bg-indigo-600 text-white shadow-md'
                                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                {f === 'all' ? 'All Students' : f === 'registered' ? 'Registered' : 'Unregistered'}
-                            </button>
-                        ))}
-                    </div>
+                                        }`}
+                                >
+                                    {f === 'all' ? 'All Students' : f === 'registered' ? 'Registered' : 'Unregistered'}
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Section Filter */}
-                    <div className="flex gap-2">
-                        <span className="text-sm font-medium text-slate-400 my-auto">Section:</span>
-                        {SECTIONS.map(section => (
-                            <button
-                                key={section}
-                                onClick={() => setSectionFilter(section)}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${sectionFilter === section
+                        {/* Department Filter */}
+                        <div className="flex gap-2">
+                            <span className="text-sm font-medium text-slate-400 my-auto">Dept:</span>
+                            <select
+                                value={departmentFilter}
+                                onChange={(e) => {
+                                    setDepartmentFilter(e.target.value);
+                                    setSectionFilter('All'); // Reset section filter when department changes
+                                }}
+                                className="px-3 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-200 border-none outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-700 transition-colors"
+                            >
+                                {departments.map(dept => (
+                                    <option key={dept} value={dept} className="bg-slate-900">{dept}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Section Filter */}
+                        <div className="flex gap-2">
+                            <span className="text-sm font-medium text-slate-400 my-auto">Section:</span>
+                            {sections.slice(0, 6).map(section => (
+                                <button
+                                    key={section}
+                                    onClick={() => setSectionFilter(section)}
+                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${sectionFilter === section
                                         ? 'bg-cyan-600 text-white shadow-md'
                                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                {section}
-                            </button>
-                        ))}
-                    </div>
+                                        }`}
+                                >
+                                    {section}
+                                </button>
+                            ))}
+                            {sections.length > 6 && (
+                                <select
+                                    value={sectionFilter}
+                                    onChange={(e) => setSectionFilter(e.target.value)}
+                                    className="px-3 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-200 border-none outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-slate-700 transition-colors"
+                                >
+                                    {sections.map(section => (
+                                        <option key={section} value={section} className="bg-slate-900">{section}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
 
-                    <div className="ml-auto">
-                        <button
-                            onClick={handleExportCSV}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 transition-colors flex items-center gap-2 text-sm"
-                        >
-                            <Download size={16} /> Export CSV
-                        </button>
+                        <div className="ml-auto flex gap-2">
+                            {/* View Mode Toggle */}
+                            <div className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('grouped')}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${viewMode === 'grouped'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    <LayoutGrid size={14} /> Grouped
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${viewMode === 'table'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    <List size={14} /> Table
+                                </button>
+                            </div>
+                            <button
+                                onClick={handleExportCSV}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 transition-colors flex items-center gap-2 text-sm"
+                            >
+                                <Download size={16} /> Export CSV
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -217,7 +326,69 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                             <Users size={48} className="mx-auto mb-4 opacity-50" />
                             <p>No students found with the selected filters.</p>
                         </div>
+                    ) : viewMode === 'grouped' ? (
+                        /* Grouped View */
+                        <div className="space-y-6">
+                            {Object.entries(groupedRegistrations).sort(([a], [b]) => a.localeCompare(b)).map(([department, sections]) => (
+                                <div key={department} className="bg-slate-800/30 rounded-xl border border-slate-700 overflow-hidden">
+                                    <div className="bg-slate-800/50 px-4 py-3 border-b border-slate-700">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Building2 size={18} className="text-indigo-400" />
+                                            {department}
+                                            <span className="text-sm font-normal text-slate-400 ml-2">
+                                                ({Object.values(sections).reduce((acc, students) => acc + students.length, 0)} students)
+                                            </span>
+                                        </h3>
+                                    </div>
+
+                                    <div className="p-4 space-y-4">
+                                        {Object.entries(sections).sort(([a], [b]) => a.localeCompare(b)).map(([section, students]) => (
+                                            <div key={section} className="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden">
+                                                <div className="bg-slate-800/30 px-3 py-2 border-b border-slate-700/50">
+                                                    <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                                                        <GraduationCap size={14} className="text-cyan-400" />
+                                                        Section {section}
+                                                        <span className="text-xs font-normal text-slate-500">({students.length} students)</span>
+                                                    </h4>
+                                                </div>
+
+                                                <div className="divide-y divide-slate-700/30">
+                                                    {students.map((student) => {
+                                                        const isRegistered = registeredIds.ids.has(student.id) || registeredIds.emails.has(student.email);
+                                                        return (
+                                                            <div key={student.id} className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors">
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium text-white text-sm">{student.name}</p>
+                                                                        <div className="flex gap-3 mt-1 text-xs text-slate-400">
+                                                                            <span className="font-mono">{student.registerNo}</span>
+                                                                            <span>•</span>
+                                                                            <span>{student.email}</span>
+                                                                            <span>•</span>
+                                                                            <span>Year {student.year}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${isRegistered
+                                                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                                            : 'bg-slate-700/50 text-slate-500 border border-slate-700'
+                                                                            }`}>
+                                                                            {isRegistered ? 'Registered' : 'Not Registered'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
+                        /* Table View */
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="sticky top-0 bg-slate-900 z-10">
@@ -248,8 +419,8 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                                                 <td className="py-3 px-4 text-sm text-slate-400">{student.section || '-'}</td>
                                                 <td className="py-3 px-4">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${isRegistered
-                                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                                            : 'bg-slate-700/50 text-slate-500 border border-slate-700'
+                                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                        : 'bg-slate-700/50 text-slate-500 border border-slate-700'
                                                         }`}>
                                                         {isRegistered ? 'Registered' : 'Not Registered'}
                                                     </span>
@@ -288,6 +459,6 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

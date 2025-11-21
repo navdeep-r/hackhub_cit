@@ -58,7 +58,6 @@ app.get('/api/hackathons', async (req, res) => {
       createdAt: hackathon.createdAt
     }));
 
-    console.log('Sending hackathons:', transformedHackathons);
     res.json(transformedHackathons);
   } catch (err) {
     console.error('Error fetching hackathons:', err);
@@ -77,9 +76,6 @@ app.post('/api/hackathons', async (req, res) => {
     // Extract data from request body
     const { id, title, description, date, registrationDeadline, registrationLink,
       platform, location, prizePool, categories, tags, impressions, createdAt } = req.body;
-
-    console.log('Received hackathon data:', req.body);
-
     // Create new hackathon object without the id field (MongoDB will generate _id)
     const hackathonData = {
       title,
@@ -99,7 +95,6 @@ app.post('/api/hackathons', async (req, res) => {
     const newHackathon = new Hackathon(hackathonData);
     const savedHackathon = await newHackathon.save();
 
-    console.log('Saved hackathon:', savedHackathon);
 
     // Add the MongoDB _id as id for frontend compatibility
     const hackathonResponse = {
@@ -107,7 +102,6 @@ app.post('/api/hackathons', async (req, res) => {
       id: savedHackathon._id.toString()
     };
 
-    console.log('Sending response:', hackathonResponse);
     res.status(201).json(hackathonResponse);
   } catch (err) {
     console.error('Error saving hackathon:', err);
@@ -156,7 +150,33 @@ app.post('/api/registrations', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(500).json({ error: 'Database not connected' });
     }
-    const newRegistration = new Registration(req.body);
+    
+    // Extract registration data from request body
+    const { studentId, studentName, email, hackathonId } = req.body;
+    
+    // If studentId is provided, fetch department and section from user data
+    let department = '';
+    let section = '';
+    
+    if (studentId) {
+      try {
+        const user = await User.findById(studentId);
+        if (user) {
+          department = user.department || '';
+          section = user.section || '';
+        }
+      } catch (userErr) {
+        console.log('Could not fetch user data for registration:', userErr.message);
+      }
+    }
+    
+    // Create new registration with department and section
+    const newRegistration = new Registration({
+      ...req.body,
+      department,
+      section
+    });
+    
     const savedRegistration = await newRegistration.save();
 
     // Transform to match frontend expectations
@@ -169,7 +189,9 @@ app.post('/api/registrations', async (req, res) => {
       studentEmail: savedRegistration.email,
       status: savedRegistration.status,
       registeredAt: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now(),
-      timestamp: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now()
+      timestamp: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now(),
+      department: savedRegistration.department,
+      section: savedRegistration.section
     };
 
     res.status(201).json({ message: 'Registered successfully', registration: transformedRegistration });
@@ -197,7 +219,9 @@ app.get('/api/registrations', async (req, res) => {
       studentEmail: reg.email, // Map email to studentEmail for backward compatibility
       status: reg.status,
       registeredAt: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now(),
-      timestamp: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now()
+      timestamp: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now(),
+      department: reg.department,
+      section: reg.section
     }));
 
     res.json(transformedRegistrations);
@@ -305,28 +329,46 @@ app.get('/api/users/students', async (req, res) => {
 // Signup Route
 app.post('/api/auth/signup', async (req, res) => {
   try {
+    console.log('=== SIGNUP REQUEST ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
+      console.log('❌ Database not connected');
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
     const { name, email, password, role, department, year, registerNo, section, secretCode } = req.body;
 
+    console.log('Extracted fields:', { name, email, role, department, year, registerNo, section, hasSecretCode: !!secretCode });
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('❌ User already exists with email:', email);
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
     }
 
-    // Validate citchennai.net email for all users
-    if (!email.endsWith('@citchennai.net')) {
-      return res.status(400).json({ success: false, error: 'All users must use an @citchennai.net email address' });
+    // Validate citchennai.net email for STUDENTS only (faculty can use any email)
+    if (role === 'STUDENT' && !email.endsWith('@citchennai.net')) {
+      console.log('❌ Invalid email domain for student:', email);
+      return res.status(400).json({ success: false, error: 'Students must use an @citchennai.net email address' });
+    }
+
+    // Verify SEC_KEY for faculty signups
+    if (role === 'FACULTY') {
+      const validSecretKey = process.env.SEC_KEY || 'QWERTY123';
+      if (!secretCode || secretCode !== validSecretKey) {
+        console.log('❌ Invalid faculty secret code');
+        return res.status(403).json({ success: false, error: 'Invalid faculty secret code. Please contact administration.' });
+      }
     }
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    console.log('✅ Creating new user...');
     // Create new user
     const newUser = new User({
       name,
@@ -340,6 +382,7 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     const savedUser = await newUser.save();
+    console.log('✅ User created successfully:', savedUser._id);
 
     // Generate JWT token
     const token = jwt.sign({ id: savedUser._id, role: savedUser.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
@@ -349,42 +392,53 @@ app.post('/api/auth/signup', async (req, res) => {
 
     res.status(201).json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
-    console.error('Signup Error:', err);
+    console.error('❌ Signup Error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 });
 
 // Login Route
 app.post('/api/auth/login', async (req, res) => {
+  console.log('🔐 Login attempt received');
   try {
     // Check if MongoDB is connected
+    console.log('MongoDB connection state:', mongoose.connection.readyState);
     if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected');
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
 
     // Find user by email
     const user = await User.findOne({ email });
+    console.log('User found:', user ? 'Yes' : 'No');
     if (!user) {
+      console.log('❌ User not found');
       return res.status(400).json({ success: false, error: 'Invalid email or password' });
     }
 
     // Check password
+    console.log('Checking password...');
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isMatch);
     if (!isMatch) {
+      console.log('❌ Password mismatch');
       return res.status(400).json({ success: false, error: 'Invalid email or password' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user.toObject();
 
+    console.log('✅ Login successful for:', email);
     res.json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
-    console.error('Login Error:', err);
+    console.error('❌ Login Error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 });

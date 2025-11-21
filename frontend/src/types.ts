@@ -24,6 +24,8 @@ export interface Registration {
     studentEmail?: string;
     email?: string;
     registeredAt?: number;
+    department?: string;
+    section?: string;
     [key: string]: any;
 }
 

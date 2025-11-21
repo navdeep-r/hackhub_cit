@@ -8,6 +8,14 @@ import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
 
+// Utility function to truncate text to a specific word count
+const truncateTextByWords = (text: string, maxWords: number): string => {
+  if (!text || typeof text !== 'string') return 'No description provided.';
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0); // Split by any whitespace and trim, filter out empty words
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
 const CATEGORY_OPTIONS = ['AI/ML/DS', 'WEB DEV', 'BLOCKCHAIN', 'IOT', 'CYBERSECURITY', 'MOBILE DEV', 'OTHER'];
 const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Government', 'Others'];
 
@@ -267,13 +275,7 @@ export const FacultyDashboard: React.FC = () => {
             <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-100">
               <TrendingUp size={20} className="text-indigo-400" /> Engagement Analytics
             </h3>
-            <button
-              onClick={handleAnalyzeTrends}
-              disabled={isAnalyzing}
-              className="px-3 py-1.5 text-sm rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/30 flex items-center gap-2 transition-all"
-            >
-              <Sparkles size={16} /> {isAnalyzing ? 'Analyzing...' : 'Get AI Insights'}
-            </button>
+
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -349,95 +351,104 @@ export const FacultyDashboard: React.FC = () => {
       {/* 2. List View Tab */}
       {activeTab === 'list' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hackathons.length === 0 && (
               <div className="col-span-full text-center py-16 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
                 <p>No hackathons created yet. Switch to the "Create New" tab to get started.</p>
               </div>
             )}
             {hackathons.map(h => (
-              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:min-h-64 overflow-hidden border border-slate-800/60">
+              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:min-h-[200px] overflow-hidden border border-slate-800/60">
                 {/* Gradient Header / Side Panel */}
-                <div className="w-full md:w-56 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-slate-900/50 relative p-6 flex flex-col justify-between group-hover:from-indigo-600/30 group-hover:via-purple-600/30 transition-all shrink-0">
-                  <div className="absolute top-0 right-0 p-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
+                <div className="w-full md:w-40 bg-gradient-to-br from-slate-950 via-blue-900/20 to-slate-950 relative p-3 flex flex-col justify-between group-hover:from-slate-900 group-hover:via-blue-800/30 transition-all shrink-0">
+                  <div className="absolute top-0 right-0 p-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
                     {/* Mobile Actions */}
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Info size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Info size={12} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Edit size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Edit size={12} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-2 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Trash2 size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shadow-lg">
+                      <Trash2 size={12} />
                     </button>
                   </div>
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
                       {h.platform}
                     </span>
                   </div>
 
                   {/* Categories in Side Panel for Desktop */}
-                  <div className="hidden md:flex flex-wrap gap-2 mt-auto">
+                  <div className="hidden md:flex flex-wrap gap-1 mt-auto">
                     {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                      <span key={i} className="px-2 py-1 bg-slate-950/30 text-slate-200 text-[10px] uppercase tracking-wide font-medium rounded-md border border-white/5">
+                      <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
                         {cat}
                       </span>
                     ))}
                     {h.categories && h.categories.length > 2 && (
-                      <span className="px-2 py-1 bg-slate-950/30 text-slate-300 text-[10px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
+                      <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Card Body */}
-                <div className="p-6 flex-1 flex flex-col relative">
+                <div className="p-3 flex-1 flex flex-col relative">
                   {/* Desktop Actions */}
-                  <div className="absolute top-4 right-4 hidden md:flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" title="View Details">
-                      <Info size={16} />
+                  <div className="absolute top-3 right-3 hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" title="View Details">
+                      <Info size={14} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Edit Hackathon">
-                      <Edit size={16} />
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Edit Hackathon">
+                      <Edit size={14} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete Hackathon">
-                      <Trash2 size={16} />
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete Hackathon">
+                      <Trash2 size={14} />
                     </button>
                   </div>
 
-                  <div className="pr-12">
-                    <h3 className="font-bold text-2xl text-white mb-2 line-clamp-1 group-hover:text-indigo-300 transition-colors">{h.title}</h3>
-                    <p className="text-slate-400 text-sm line-clamp-2 mb-4">{h.description || 'No description provided.'}</p>
+                  <div className="pr-10 mb-auto flex-1 flex flex-col">
+                    <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-indigo-300 transition-colors" title={h.title}>{h.title}</h3>
+                    <div className="flex-1 flex items-center">
+                      <p className="text-slate-400 text-sm leading-tight line-clamp-3" title={h.description}>
+                        {truncateTextByWords(h.description || 'No description provided.', 20)}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm text-slate-400 mb-auto">
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-indigo-400 shrink-0" />
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={12} className="text-indigo-400 shrink-0" />
                       <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <MapPin size={16} className="text-indigo-400 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <MapPin size={12} className="text-indigo-400 shrink-0" />
                       <span className="truncate">{h.location}</span>
                     </div>
-                    <div className="flex items-center gap-3 col-span-2">
-                      <Clock size={16} className="text-indigo-400 shrink-0" />
+                    <div className="flex items-center gap-2 col-span-2">
+                      <Clock size={12} className="text-indigo-400 shrink-0" />
                       <span className="truncate">Deadline: {new Date(h.registrationDeadline).toLocaleDateString()}</span>
                     </div>
                   </div>
 
+                  <div className="flex-1"></div>
+
                   {/* Stats Row */}
-                  <div className="flex gap-4 mt-6 pt-4 border-t border-slate-800/50">
-                    <div className="flex items-center gap-2 text-sm">
+                  <div className="flex gap-3 pt-3 border-t border-slate-800/50">
+                    <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-slate-500 font-medium">Impressions:</span>
                       <div className="flex items-center gap-1 text-slate-200 font-semibold">
-                        <Eye size={14} className="text-indigo-400" /> {h.impressions}
+                        <Eye size={12} className="text-indigo-400" /> {h.impressions}
                       </div>
                     </div>
-                    <div className="h-4 w-px bg-slate-800 my-auto"></div>
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="h-3 w-px bg-slate-800 my-auto"></div>
+                    <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-slate-500 font-medium">Registrations:</span>
                       <div className="flex items-center gap-1 text-slate-200 font-semibold">
-                        <Users size={14} className="text-cyan-400" /> {registrations.filter(r => r.hackathonId === h.id).length}
+                        <Users size={12} className="text-cyan-400" /> {(() => {
+                          const count = registrations.filter(r => r.hackathonId === h.id).length;
+                          return count;
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -445,9 +456,9 @@ export const FacultyDashboard: React.FC = () => {
                   {/* View Registrations Button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setSelectedHackathonForRegs(h); setRegistrationsModalOpen(true); }}
-                    className="w-full mt-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/30"
+                    className="w-full mt-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-1 text-sm shadow-lg shadow-indigo-900/30"
                   >
-                    <Users size={16} /> View Registrations
+                    <Users size={12} /> View Registrations
                   </button>
 
 
@@ -545,33 +556,11 @@ export const FacultyDashboard: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2 flex justify-between items-center">
                   Description
-                  <button
-                    className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-2 py-1 rounded bg-indigo-950/50 border border-indigo-900"
-                    onClick={() => document.getElementById('ai-panel')?.classList.toggle('hidden')}
-                  >
-                    <Sparkles size={12} /> AI Assistant
-                  </button>
+
                 </label>
 
                 {/* AI Assistant Panel */}
-                <div id="ai-panel" className="hidden mb-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Keywords (e.g. 'Beginner friendly, Web3, 24h')"
-                      className="flex-1 p-2 text-sm bg-slate-950 border border-slate-700 rounded-lg text-white focus:border-indigo-500 outline-none"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                    />
-                    <button
-                      onClick={handleGenerateDescription}
-                      disabled={isGenerating || !formData.title}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isGenerating ? '...' : 'Generate'}
-                    </button>
-                  </div>
-                </div>
+
 
                 <textarea
                   rows={6}

@@ -1,6 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen } from 'lucide-react';
+import { HackathonDetailsModal } from './HackathonDetailsModal';
+
+// Utility function to truncate text to a specific word count
+const truncateTextByWords = (text: string, maxWords: number): string => {
+  if (!text || typeof text !== 'string') return 'No description provided.';
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(' ') + '...';
+};
 import { Hackathon, Registration, User } from '../types';
 import { getHackathons, registerStudent, getRegistrations, incrementImpression } from '../services/api';
 // @ts-ignore
@@ -179,25 +187,25 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         <div className="flex p-1 bg-slate-900/80 rounded-xl w-fit border border-slate-800 mb-8 animate-slide-up-delay-1">
           <button
             onClick={() => setActiveTab('explore')}
-            className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'explore'
+            className={`px - 6 py - 2.5 text - sm font - medium rounded - lg transition - all duration - 300 flex items - center gap - 2 ${activeTab === 'explore'
               ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
               : 'text-slate-400 hover:text-slate-200'
-              }`}
+              } `}
           >
             <Compass size={16} /> Explore New
           </button>
           <button
             onClick={() => setActiveTab('my-events')}
-            className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'my-events'
+            className={`px - 6 py - 2.5 text - sm font - medium rounded - lg transition - all duration - 300 flex items - center gap - 2 ${activeTab === 'my-events'
               ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
               : 'text-slate-400 hover:text-slate-200'
-              }`}
+              } `}
           >
             <BookOpen size={16} /> My Events ({myRegistrationIds.length})
           </button>
         </div>
 
-        <div className="space-y-4 animate-slide-up-delay-1">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up-delay-1 auto-rows-fr">
           {displayedHackathons.length === 0 && (
             <div className="text-center py-12 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
               <p>No hackathons found in this section.</p>
@@ -207,69 +215,75 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           {displayedHackathons.map(h => {
             const isRegistered = myRegistrationIds.includes(h.id);
             return (
-              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-64 overflow-hidden border border-slate-800/60 cursor-pointer">
+              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:min-h-[200px] overflow-hidden border border-slate-00/60 cursor-pointer">
                 {/* Gradient Header / Side Panel */}
-                <div className="w-full md:w-56 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-6 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
+                <div className="w-full md:w-48 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-4 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
                       {h.platform}
                     </span>
                     {isNew(h.createdAt) && !isRegistered && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                        <Bell size={10} /> NEW
+                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        <Bell size={9} /> NEW
                       </span>
                     )}
                     {isRegistered && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        <CheckCircle size={10} /> GOING
+                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <CheckCircle size={9} /> GOING
                       </span>
                     )}
                   </div>
 
                   {/* Categories in Side Panel for Desktop */}
-                  <div className="hidden md:flex flex-wrap gap-2 mt-auto">
+                  <div className="hidden md:flex flex-wrap gap-1 mt-auto">
                     {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                      <span key={i} className="px-2 py-1 bg-slate-950/30 text-slate-200 text-[10px] uppercase tracking-wide font-medium rounded-md border border-white/5">
+                      <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
                         {cat}
                       </span>
                     ))}
                     {h.categories && h.categories.length > 2 && (
-                      <span className="px-2 py-1 bg-slate-950/30 text-slate-300 text-[10px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
+                      <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Card Body */}
-                <div className="p-6 flex-1 flex flex-col relative">
-                  <div className="pr-12">
-                    <h3 className="font-bold text-2xl text-white mb-2 line-clamp-1 group-hover:text-cyan-300 transition-colors">{h.title}</h3>
-                    <p className="text-slate-400 text-sm line-clamp-2 mb-4">{h.description || 'No description provided.'}</p>
+                <div className="p-3 flex-1 flex flex-col relative">
+                  <div className="pr-10 mb-4 flex-1 flex flex-col">
+                    <h3 className="font-bold text-xl text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
+                    <div className="flex-1 flex items-center">
+                      <p className="text-slate-400 text-sm leading-tight line-clamp-3" title={h.description}>
+                        {truncateTextByWords(h.description || 'No description provided.', 20)}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm text-slate-400 mb-auto">
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-cyan-400 shrink-0" />
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={14} className="text-cyan-400 shrink-0" />
                       <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <MapPin size={16} className="text-cyan-400 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className="text-cyan-400 shrink-0" />
                       <span className="truncate">{h.location}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Trophy size={16} className="text-yellow-400 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <Trophy size={14} className="text-yellow-400 shrink-0" />
                       <span className="truncate">{h.prizePool}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Clock size={16} className="text-orange-400 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} className="text-orange-400 shrink-0" />
                       <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
 
+                  <div className="flex-1"></div>
+
                   {/* Action Row */}
-                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-800/50">
-                    <div className="flex md:hidden flex-wrap gap-2">
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800/50">
+                    <div className="flex md:hidden flex-wrap gap-1">
                       {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                        <span key={i} className="px-2 py-1 bg-slate-800/50 text-slate-400 text-[10px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                        <span key={i} className="px-1.5 py-0.5 bg-slate-800/50 text-slate-400 text-[9px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
                           {cat}
                         </span>
                       ))}
@@ -277,12 +291,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
                     <div className="ml-auto">
                       {isRegistered ? (
-                        <button className="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-medium border border-slate-700 flex items-center gap-2 cursor-default">
-                          <CheckCircle size={16} /> Registered
+                        <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium border border-slate-700 flex items-center gap-1.5 cursor-default">
+                          <CheckCircle size={14} /> Registered
                         </button>
                       ) : (
-                        <button className="px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-2 group-hover:scale-105">
-                          View Details <ArrowRight size={16} />
+                        <button className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-1.5 group-hover:scale-105">
+                          View Details <ArrowRight size={14} />
                         </button>
                       )}
                     </div>
