@@ -121,34 +121,117 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     return (
         <div className="min-h-[90vh] flex items-center justify-center px-4 py-12 relative overflow-hidden">
-            {/* Animated Background - Particles */}
+            {/* Twinkling Stars Background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
-                {[...Array(18)].map((_, i) => (
+                {[...Array(50)].map((_, i) => (
                     <div
-                        key={`particle-${i}`}
-                        className="absolute rounded-full bg-blue-500 animate-float"
+                        key={`star-${i}`}
+                        className="absolute rounded-full bg-white"
                         style={{
-                            width: `${4 + (i % 3) * 3}px`,
-                            height: `${4 + (i % 3) * 3}px`,
-                            left: `${(i * 5.5) % 100}%`,
-                            top: `${(i * 7.3) % 100}%`,
-                            animationDelay: `${i * 0.8}s`,
-                            animationDuration: `${10 + (i % 5) * 2}s`,
-                            opacity: 0.3
+                            width: `${1 + (i % 3)}px`,
+                            height: `${1 + (i % 3)}px`,
+                            left: `${(i * 13.7) % 100}%`,
+                            top: `${(i * 17.3) % 100}%`,
+                            animation: `twinkle ${2 + (i % 4)}s ease-in-out infinite`,
+                            animationDelay: `${(i * 0.1) % 3}s`,
+                            opacity: 0.6
                         }}
                     />
                 ))}
             </div>
 
-            {/* Animated Background - Geometric Shapes */}
+            {/* Shooting Comets */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+                {[...Array(3)].map((_, i) => (
+                    <div
+                        key={`comet-${i}`}
+                        className="absolute"
+                        style={{
+                            left: `${20 + i * 30}%`,
+                            top: `${-10 + i * 5}%`,
+                            animation: `shootingStar ${8 + i * 2}s linear infinite`,
+                            animationDelay: `${i * 3}s`,
+                        }}
+                    >
+                        <div className="relative">
+                            {/* Comet Head */}
+                            <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.8)]" />
+                            {/* Comet Tail */}
+                            <div
+                                className="absolute top-0 left-0 w-32 h-[2px] origin-left -rotate-45"
+                                style={{
+                                    background: 'linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(147,197,253,0.4) 50%, transparent 100%)',
+                                }}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Orbital Rings */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center" style={{ zIndex: 0 }}>
+                {[...Array(3)].map((_, i) => (
+                    <div
+                        key={`orbit-${i}`}
+                        className="absolute border border-blue-500/10 rounded-full"
+                        style={{
+                            width: `${400 + i * 150}px`,
+                            height: `${400 + i * 150}px`,
+                            animation: `rotate ${20 + i * 10}s linear infinite ${i % 2 === 0 ? 'normal' : 'reverse'}`,
+                        }}
+                    >
+                        <div
+                            className="absolute w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.6)]"
+                            style={{
+                                top: '50%',
+                                left: '0',
+                                transform: 'translate(-50%, -50%)'
+                            }}
+                        />
+                    </div>
+                ))}
+            </div>
+
+            {/* Floating Particles with Glow */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+                {[...Array(15)].map((_, i) => (
+                    <div
+                        key={`particle-${i}`}
+                        className="absolute rounded-full"
+                        style={{
+                            width: `${4 + (i % 3) * 4}px`,
+                            height: `${4 + (i % 3) * 4}px`,
+                            left: `${(i * 7.5) % 100}%`,
+                            top: `${(i * 11.3) % 100}%`,
+                            background: i % 3 === 0 ? 'rgba(34, 211, 238, 0.4)' : i % 3 === 1 ? 'rgba(147, 51, 234, 0.4)' : 'rgba(59, 130, 246, 0.4)',
+                            boxShadow: i % 3 === 0 ? '0 0 20px rgba(34, 211, 238, 0.4)' : i % 3 === 1 ? '0 0 20px rgba(147, 51, 234, 0.4)' : '0 0 20px rgba(59, 130, 246, 0.4)',
+                            animation: `float ${10 + (i % 5) * 2}s ease-in-out infinite`,
+                            animationDelay: `${i * 0.8}s`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            {/* Nebula Clouds */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
                 <div
-                    className="absolute w-96 h-96 rounded-full bg-gradient-to-br from-cyan-500/10 to-blue-600/10 blur-3xl animate-pulse-slow"
-                    style={{ top: '10%', left: '10%' }}
+                    className="absolute w-[600px] h-[600px] rounded-full opacity-20 blur-3xl"
+                    style={{
+                        top: '-10%',
+                        left: '-10%',
+                        background: 'radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.2) 40%, transparent 70%)',
+                        animation: 'pulse 8s ease-in-out infinite',
+                    }}
                 />
                 <div
-                    className="absolute w-64 h-64 rounded-full bg-gradient-to-br from-purple-500/8 to-pink-600/8 blur-2xl animate-rotate-slow"
-                    style={{ bottom: '15%', right: '15%' }}
+                    className="absolute w-[500px] h-[500px] rounded-full opacity-20 blur-3xl"
+                    style={{
+                        bottom: '-15%',
+                        right: '-15%',
+                        background: 'radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, rgba(168, 85, 247, 0.2) 40%, transparent 70%)',
+                        animation: 'pulse 10s ease-in-out infinite',
+                        animationDelay: '2s',
+                    }}
                 />
             </div>
 
@@ -471,6 +554,44 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 }}
                 message={error || 'An unknown error occurred'}
             />
+
+            {/* Animation Keyframes */}
+            <style>{`
+                @keyframes twinkle {
+                    0%, 100% { opacity: 0.2; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.5); }
+                }
+                
+                @keyframes shootingStar {
+                    0% {
+                        transform: translateX(0) translateY(0) rotate(-45deg);
+                        opacity: 1;
+                    }
+                    70% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translated(1000px) translateY(1000px) rotate(-45deg);
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes rotate {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px) translateX(0px); }
+                    33% { transform: translateY(-20px) translateX(10px); }
+                    66% { transform: translateY(10px) translateX(-10px); }
+                }
+                
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 0.2; }
+                    50% { transform: scale(1.1); opacity: 0.3; }
+                }
+            `}</style>
         </div>
     );
 };

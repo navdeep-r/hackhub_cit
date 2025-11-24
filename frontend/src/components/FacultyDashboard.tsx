@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft, Info } from 'lucide-react';
 import { Hackathon, Registration, AnalyticsData } from '../types';
@@ -7,6 +7,7 @@ import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, genera
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
+import { ErrorModal } from './ErrorModal';
 
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {
@@ -50,21 +51,17 @@ export const FacultyDashboard: React.FC = () => {
   const [registrationsModalOpen, setRegistrationsModalOpen] = useState(false);
   const [selectedHackathonForRegs, setSelectedHackathonForRegs] = useState<Hackathon | null>(null);
   const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [formError, setFormError] = useState<string>('');
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const refreshData = async () => {
     try {
-      console.log('Refreshing data...');
       const hData = await getHackathons();
-      console.log('Fetched hackathons:', hData);
-      console.log('Setting hackathons state with', hData.length, 'items');
       setHackathons(hData);
 
       // Try to fetch registrations but don't let it block hackathon display
       try {
         const rData = await getRegistrations();
-        console.log('Fetched registrations:', rData);
-        console.log('Number of registrations:', rData.length);
-        console.log('Sample registration:', rData[0]);
         setRegistrations(rData);
       } catch (regError) {
         console.error('Error fetching registrations (continuing anyway):', regError);
@@ -72,32 +69,38 @@ export const FacultyDashboard: React.FC = () => {
         setRegistrations([]);
       }
 
-      // Fetch all students for registration management
+      // Fetch all students for the registrations modal
       try {
         const students = await getAllStudents();
-        console.log('Fetched students:', students);
-        console.log('Number of students:', students.length);
-        if (students.length > 0) {
-          console.log('Sample student:', students[0]);
-        }
         setAllStudents(students);
       } catch (err) {
         console.warn('Failed to fetch students:', err);
       }
-
-      console.log('Data refresh complete');
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
   };
 
+  // Create a memoized map of registration counts per hackathon
+  const registrationCountMap = useMemo(() => {
+    const countMap = new Map<string, number>();
+
+    registrations.forEach(r => {
+      const hackathonId = String(r.hackathonId); // Ensure string comparison
+      countMap.set(hackathonId, (countMap.get(hackathonId) || 0) + 1);
+    });
+
+    return countMap;
+  }, [registrations]);
+
   useEffect(() => {
-    console.log('Component mounted, fetching initial data');
     refreshData();
   }, []);
 
   useEffect(() => {
-    console.log('Hackathons state updated:', hackathons);
+    if (hackathons.length > 0) {
+      // Logic for hackathon updates
+    }
   }, [hackathons]);
 
   const handleSwitchToCreate = (reset = true) => {
@@ -113,7 +116,57 @@ export const FacultyDashboard: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.date) return;
+    setFormError('');
+
+    // Validate required fields
+    if (!formData.title || !formData.date) {
+      setFormError('Title and Event Date are required fields.');
+      setErrorModalOpen(true);
+      return;
+    }
+
+    if (!formData.registrationDeadline) {
+      setFormError('Registration Deadline is required.');
+      setErrorModalOpen(true);
+      return;
+    }
+
+    if (!formData.registrationLink) {
+      setFormError('Registration Link is required.');
+      setErrorModalOpen(true);
+      return;
+    }
+
+    // Validate year is exactly 4 digits
+    if (formData.date) {
+      const eventYear = new Date(formData.date).getFullYear();
+      if (eventYear < 2000 || eventYear > 9999) {
+        setFormError('Event date year must be a valid 4-digit year (1000-9999).');
+        setErrorModalOpen(true);
+        return;
+      }
+    }
+
+    if (formData.registrationDeadline) {
+      const deadlineYear = new Date(formData.registrationDeadline).getFullYear();
+      if (deadlineYear < 1000 || deadlineYear > 9999) {
+        setFormError('Registration deadline year must be a valid 4-digit year (1000-9999).');
+        setErrorModalOpen(true);
+        return;
+      }
+    }
+
+    // Validate that event date is on or after registration deadline
+    if (formData.date && formData.registrationDeadline) {
+      const eventDate = new Date(formData.date);
+      const deadlineDate = new Date(formData.registrationDeadline);
+
+      if (eventDate < deadlineDate) {
+        setFormError('Event date must be on or after the registration deadline date.');
+        setErrorModalOpen(true);
+        return;
+      }
+    }
 
     try {
       const newHackathon: Hackathon = {
@@ -133,16 +186,15 @@ export const FacultyDashboard: React.FC = () => {
       };
 
       const savedHackathon = await saveHackathon(newHackathon);
-      console.log('Hackathon saved:', savedHackathon);
       setActiveTab('list');
       setFormData({ platform: 'Unstop', categories: [] });
       // Add a small delay to ensure database persistence
       await new Promise(resolve => setTimeout(resolve, 500));
       await refreshData();
-      console.log('Data refreshed after save');
     } catch (error: any) {
       console.error('Error saving hackathon:', error);
-      alert('Failed to save hackathon: ' + (error.message || 'Unknown error'));
+      setFormError('Failed to save hackathon: ' + (error.message || 'Unknown error'));
+      setErrorModalOpen(true);
     }
   };
 
@@ -358,7 +410,7 @@ export const FacultyDashboard: React.FC = () => {
               </div>
             )}
             {hackathons.map(h => (
-              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:min-h-[200px] overflow-hidden border border-slate-800/60">
+              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:h-56 overflow-hidden border border-slate-800/60">
                 {/* Gradient Header / Side Panel */}
                 <div className="w-full md:w-40 bg-gradient-to-br from-slate-950 via-blue-900/20 to-slate-950 relative p-3 flex flex-col justify-between group-hover:from-slate-900 group-hover:via-blue-800/30 transition-all shrink-0">
                   <div className="absolute top-0 right-0 p-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
@@ -416,7 +468,7 @@ export const FacultyDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-4">
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-auto">
                     <div className="flex items-center gap-2">
                       <Calendar size={12} className="text-indigo-400 shrink-0" />
                       <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -431,10 +483,8 @@ export const FacultyDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1"></div>
-
                   {/* Stats Row */}
-                  <div className="flex gap-3 pt-3 border-t border-slate-800/50">
+                  <div className="flex gap-3 mt-2 pt-3 border-t border-slate-800/50">
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-slate-500 font-medium">Impressions:</span>
                       <div className="flex items-center gap-1 text-slate-200 font-semibold">
@@ -445,10 +495,7 @@ export const FacultyDashboard: React.FC = () => {
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-slate-500 font-medium">Registrations:</span>
                       <div className="flex items-center gap-1 text-slate-200 font-semibold">
-                        <Users size={12} className="text-cyan-400" /> {(() => {
-                          const count = registrations.filter(r => r.hackathonId === h.id).length;
-                          return count;
-                        })()}
+                        <Users size={12} className="text-cyan-400" /> {registrationCountMap.get(String(h.id)) || 0}
                       </div>
                     </div>
                   </div>
@@ -456,7 +503,7 @@ export const FacultyDashboard: React.FC = () => {
                   {/* View Registrations Button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setSelectedHackathonForRegs(h); setRegistrationsModalOpen(true); }}
-                    className="w-full mt-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-1 text-sm shadow-lg shadow-indigo-900/30"
+                    className="w-full mt-2 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-1 text-sm shadow-lg shadow-indigo-900/30"
                   >
                     <Users size={12} /> View Registrations
                   </button>
@@ -500,9 +547,10 @@ export const FacultyDashboard: React.FC = () => {
               {/* Row 1 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Title</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Title <span className="text-red-400">*</span></label>
                   <input
                     type="text"
+                    required
                     className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     value={formData.title || ''}
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
@@ -527,11 +575,14 @@ export const FacultyDashboard: React.FC = () => {
               {/* Row 2: Dates */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Event Date</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Event Date <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3.5 text-slate-500" size={16} />
                     <input
                       type="date"
+                      required
+                      min="1000-01-01"
+                      max="9999-12-31"
                       className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
                       value={formData.date || ''}
                       onChange={e => setFormData({ ...formData, date: e.target.value })}
@@ -539,11 +590,14 @@ export const FacultyDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Registration Deadline</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Registration Deadline <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-3.5 text-slate-500" size={16} />
                     <input
                       type="date"
+                      required
+                      min="1000-01-01"
+                      max="9999-12-31"
                       className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]"
                       value={formData.registrationDeadline || ''}
                       onChange={e => setFormData({ ...formData, registrationDeadline: e.target.value })}
@@ -621,11 +675,12 @@ export const FacultyDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Registration Link</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Registration Link <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <LinkIcon className="absolute left-3 top-3.5 text-slate-500" size={16} />
                     <input
                       type="url"
+                      required
                       className="w-full p-3 pl-10 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       value={formData.registrationLink || ''}
                       onChange={e => setFormData({ ...formData, registrationLink: e.target.value })}
@@ -672,6 +727,12 @@ export const FacultyDashboard: React.FC = () => {
         hackathon={selectedHackathonForRegs}
         registrations={registrations}
         allStudents={allStudents}
+      />
+      <ErrorModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        message={formError}
+        title="Validation Error"
       />
     </div>
   );

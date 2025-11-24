@@ -109,6 +109,53 @@ app.post('/api/hackathons', async (req, res) => {
   }
 });
 
+// 2.1 UPDATE an existing hackathon
+app.put('/api/hackathons/:id', async (req, res) => {
+  // Removed console.log statements
+  try {
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({ error: 'Database not connected' });
+    }
+
+    const { title, description, date, registrationDeadline, registrationLink,
+      platform, location, prizePool, categories, tags, impressions } = req.body;
+
+    const updatedHackathon = await Hackathon.findByIdAndUpdate(
+      req.params.id,
+      {
+        title,
+        description,
+        date,
+        registrationDeadline,
+        registrationLink,
+        platform,
+        location,
+        prizePool,
+        categories,
+        tags,
+        impressions
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedHackathon) {
+      return res.status(404).json({ error: 'Hackathon not found' });
+    }
+
+    // Add the MongoDB _id as id for frontend compatibility
+    const hackathonResponse = {
+      ...updatedHackathon.toObject(),
+      id: updatedHackathon._id.toString()
+    };
+
+    res.json(hackathonResponse);
+  } catch (err) {
+    console.error('Error updating hackathon:', err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 3. DELETE a hackathon
 app.delete('/api/hackathons/:id', async (req, res) => {
   try {
@@ -150,14 +197,14 @@ app.post('/api/registrations', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(500).json({ error: 'Database not connected' });
     }
-    
+
     // Extract registration data from request body
     const { studentId, studentName, email, hackathonId } = req.body;
-    
+
     // If studentId is provided, fetch department and section from user data
     let department = '';
     let section = '';
-    
+
     if (studentId) {
       try {
         const user = await User.findById(studentId);
@@ -166,17 +213,17 @@ app.post('/api/registrations', async (req, res) => {
           section = user.section || '';
         }
       } catch (userErr) {
-        console.log('Could not fetch user data for registration:', userErr.message);
+        // Removed console.log
       }
     }
-    
+
     // Create new registration with department and section
     const newRegistration = new Registration({
       ...req.body,
       department,
       section
     });
-    
+
     const savedRegistration = await newRegistration.save();
 
     // Transform to match frontend expectations
@@ -329,29 +376,35 @@ app.get('/api/users/students', async (req, res) => {
 // Signup Route
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    console.log('=== SIGNUP REQUEST ===');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    // Removed console.log statements
 
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      console.log('❌ Database not connected');
+      // Removed console.log
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
     const { name, email, password, role, department, year, registerNo, section, secretCode } = req.body;
 
-    console.log('Extracted fields:', { name, email, role, department, year, registerNo, section, hasSecretCode: !!secretCode });
-
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('❌ User already exists with email:', email);
+      // Removed console.log
       return res.status(400).json({ success: false, error: 'User already exists with this email' });
+    }
+
+    // Check for duplicate registration number (for students)
+    if (role === 'STUDENT' && registerNo) {
+      const existingRegNo = await User.findOne({ registerNo });
+      if (existingRegNo) {
+        // Removed console.log
+        return res.status(400).json({ success: false, error: 'This registration number is already in use. Please check your registration number.' });
+      }
     }
 
     // Validate citchennai.net email for STUDENTS only (faculty can use any email)
     if (role === 'STUDENT' && !email.endsWith('@citchennai.net')) {
-      console.log('❌ Invalid email domain for student:', email);
+      // Removed console.log
       return res.status(400).json({ success: false, error: 'Students must use an @citchennai.net email address' });
     }
 
@@ -359,7 +412,7 @@ app.post('/api/auth/signup', async (req, res) => {
     if (role === 'FACULTY') {
       const validSecretKey = process.env.SEC_KEY || 'QWERTY123';
       if (!secretCode || secretCode !== validSecretKey) {
-        console.log('❌ Invalid faculty secret code');
+        // Removed console.log
         return res.status(403).json({ success: false, error: 'Invalid faculty secret code. Please contact administration.' });
       }
     }
@@ -368,7 +421,7 @@ app.post('/api/auth/signup', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    console.log('✅ Creating new user...');
+    // Removed console.log
     // Create new user
     const newUser = new User({
       name,
@@ -382,7 +435,7 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     const savedUser = await newUser.save();
-    console.log('✅ User created successfully:', savedUser._id);
+    // Removed console.log
 
     // Generate JWT token
     const token = jwt.sign({ id: savedUser._id, role: savedUser.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
@@ -400,32 +453,32 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // Login Route
 app.post('/api/auth/login', async (req, res) => {
-  console.log('🔐 Login attempt received');
+  // Removed console.log
   try {
     // Check if MongoDB is connected
-    console.log('MongoDB connection state:', mongoose.connection.readyState);
+    // Removed console.log
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected');
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
     const { email, password } = req.body;
-    console.log('Login attempt for email:', email);
+    // Removed console.log
 
     // Find user by email
     const user = await User.findOne({ email });
-    console.log('User found:', user ? 'Yes' : 'No');
+    // Removed console.log
     if (!user) {
-      console.log('❌ User not found');
+      // Removed console.log
       return res.status(400).json({ success: false, error: 'Invalid email or password' });
     }
 
     // Check password
-    console.log('Checking password...');
+    // Removed console.log
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
+    // Removed console.log
     if (!isMatch) {
-      console.log('❌ Password mismatch');
+      // Removed console.log
       return res.status(400).json({ success: false, error: 'Invalid email or password' });
     }
 
@@ -434,7 +487,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user.toObject();
 
-    console.log('✅ Login successful for:', email);
+    // Removed console.log
     res.json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
     console.error('❌ Login Error:', err);

@@ -102,7 +102,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     return (Date.now() - timestamp) < (7 * 24 * 60 * 60 * 1000);
   };
 
-  // Filter Logic
+  // Filter Logic - Only include active (non-expired) hackathons
+  const today = Date.now();
+  const activeRegistrationIds = registrations
+    .filter(r => r.studentId === user.id || r.email === user.email || r.studentEmail === user.email)
+    .map(r => r.hackathonId)
+    .filter(id => {
+      const hackathon = hackathons.find(h => h.id === id);
+      if (!hackathon) return false;
+      const eventDate = new Date(hackathon.date).getTime();
+      return eventDate >= today; // Only include hackathons that haven't passed yet
+    });
+
   const myRegistrationIds = registrations.filter(r => r.studentId === user.id || r.email === user.email || r.studentEmail === user.email).map(r => r.hackathonId);
 
   const registeredHackathons = hackathons.filter(h => myRegistrationIds.includes(h.id));
@@ -141,19 +152,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           </div>
 
           <div className="space-y-6">
-            <div>
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Skills</h4>
-              <div className="flex flex-wrap gap-2">
-                {user.skills && user.skills.length > 0 ? user.skills.map(skill => (
-                  <span key={skill} className="px-2 py-1 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs rounded-md">
-                    {skill}
-                  </span>
-                )) : (
-                  <span className="text-xs text-slate-600 italic">No skills added yet</span>
-                )}
-              </div>
-            </div>
-
             <div className="pt-6 border-t border-slate-800">
               <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl">
                 <span className="text-slate-400 text-sm">Registered Events</span>
@@ -184,28 +182,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         </header>
 
         {/* Tab Navigation */}
-        <div className="flex p-1 bg-slate-900/80 rounded-xl w-fit border border-slate-800 mb-8 animate-slide-up-delay-1">
+        <div className="flex gap-3 p-1 bg-slate-900/80 rounded-xl w-fit border border-slate-800 mb-8 animate-slide-up-delay-1">
           <button
             onClick={() => setActiveTab('explore')}
-            className={`px - 6 py - 2.5 text - sm font - medium rounded - lg transition - all duration - 300 flex items - center gap - 2 ${activeTab === 'explore'
+            className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'explore'
               ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
               : 'text-slate-400 hover:text-slate-200'
-              } `}
+              }`}
           >
             <Compass size={16} /> Explore New
           </button>
           <button
             onClick={() => setActiveTab('my-events')}
-            className={`px - 6 py - 2.5 text - sm font - medium rounded - lg transition - all duration - 300 flex items - center gap - 2 ${activeTab === 'my-events'
+            className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${activeTab === 'my-events'
               ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
               : 'text-slate-400 hover:text-slate-200'
-              } `}
+              }`}
           >
-            <BookOpen size={16} /> My Events ({myRegistrationIds.length})
+            <BookOpen size={16} /> My Events ({activeRegistrationIds.length})
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up-delay-1 auto-rows-fr">
+        <div className="grid grid-cols-1 gap-4 animate-slide-up-delay-1">
           {displayedHackathons.length === 0 && (
             <div className="text-center py-12 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
               <p>No hackathons found in this section.</p>
@@ -215,9 +213,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           {displayedHackathons.map(h => {
             const isRegistered = myRegistrationIds.includes(h.id);
             return (
-              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:min-h-[200px] overflow-hidden border border-slate-00/60 cursor-pointer">
+              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-52 overflow-hidden border border-slate-800/60 cursor-pointer">
                 {/* Gradient Header / Side Panel */}
-                <div className="w-full md:w-48 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-4 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
+                <div className="w-full md:w-40 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-3 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
                   <div className="flex justify-between items-start">
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
                       {h.platform}
@@ -249,16 +247,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
                 {/* Card Body */}
                 <div className="p-3 flex-1 flex flex-col relative">
-                  <div className="pr-10 mb-4 flex-1 flex flex-col">
-                    <h3 className="font-bold text-xl text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
+                  <div className="pr-10 mb-2 flex-1 flex flex-col">
+                    <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
                     <div className="flex-1 flex items-center">
-                      <p className="text-slate-400 text-sm leading-tight line-clamp-3" title={h.description}>
-                        {truncateTextByWords(h.description || 'No description provided.', 20)}
+                      <p className="text-slate-400 text-sm leading-tight line-clamp-2" title={h.description}>
+                        {truncateTextByWords(h.description || 'No description provided.', 15)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-4">
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">
                     <div className="flex items-center gap-2">
                       <Calendar size={14} className="text-cyan-400 shrink-0" />
                       <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>

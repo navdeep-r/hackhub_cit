@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { X, Camera, Save, Loader2, Mail, Building, Calendar, Hash, User as UserIcon } from 'lucide-react';
+import { X, Save, Loader2, Mail, Building, Calendar, Hash, User as UserIcon } from 'lucide-react';
 import { updateUserProfile } from '../services/api';
 
 interface ProfileModalProps {
@@ -19,24 +19,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
         year: user.year || '',
         registerNo: user.registerNo || '',
         bio: user.bio || '',
-        skills: user.skills || [],
-        profilePicture: user.profilePicture || ''
+        skills: user.skills || []
     });
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
     if (!isOpen) return null;
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, profilePicture: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
 
     const handleSave = async () => {
         setIsLoading(true);
@@ -72,29 +58,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                         <div className="flex flex-col items-center gap-4 md:w-1/3">
                             <div className="relative group">
                                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-800 bg-slate-800 shadow-xl">
-                                    {formData.profilePicture ? (
-                                        <img src={formData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-800">
-                                            <UserIcon size={48} />
-                                        </div>
-                                    )}
+                                    <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-800">
+                                        <UserIcon size={48} />
+                                    </div>
                                 </div>
-                                {isEditing && (
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="absolute bottom-0 right-0 p-2 bg-indigo-600 rounded-full text-white shadow-lg hover:bg-indigo-500 transition-all"
-                                    >
-                                        <Camera size={16} />
-                                    </button>
-                                )}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                />
                             </div>
 
                             <div className="text-center">
@@ -199,7 +166,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                     {isEditing ? (
                         <>
                             <button
-                                onClick={() => { setIsEditing(false); setFormData({ ...user, profilePicture: user.profilePicture || '' }); }}
+                                onClick={() => { setIsEditing(false); setFormData({ name: user.name, department: user.department || '', year: user.year || '', registerNo: user.registerNo || '', bio: user.bio || '', skills: user.skills || [] }); }}
                                 className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors"
                                 disabled={isLoading}
                             >

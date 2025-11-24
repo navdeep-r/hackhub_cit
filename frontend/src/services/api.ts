@@ -1,7 +1,7 @@
 
 import { Hackathon, Registration, StudentProfile, User } from '../types';
 
-const API_BASE = '/api'; // Proxied via Vite
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
 
 // --- Auth ---
 export const loginUser = async (credentials: any): Promise<User> => {
@@ -47,15 +47,27 @@ export const getHackathons = async (): Promise<Hackathon[]> => {
 };
 
 export const saveHackathon = async (hackathon: Hackathon): Promise<Hackathon> => {
-  const res = await fetch(`${API_BASE}/hackathons`, {
-    method: 'POST',
+  const isUpdate = hackathon.id && hackathon.id.length === 24;
+  const url = isUpdate ? `${API_BASE}/hackathons/${hackathon.id}` : `${API_BASE}/hackathons`;
+  const method = isUpdate ? 'PUT' : 'POST';
+
+  const res = await fetch(url, {
+    method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(hackathon)
   });
 
   if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || 'Failed to save hackathon');
+    const contentType = res.headers.get('content-type');
+
+    if (contentType && contentType.includes('application/json')) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to save hackathon');
+    } else {
+      const errorText = await res.text();
+      console.error('Non-JSON error response:', errorText.substring(0, 200));
+      throw new Error('Server returned non-JSON response. Please check backend server is running and restart it if needed.');
+    }
   }
 
   return res.json();

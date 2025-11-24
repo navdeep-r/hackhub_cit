@@ -5,9 +5,10 @@ interface ErrorModalProps {
     isOpen: boolean;
     onClose: () => void;
     message: string;
+    title?: string;
 }
 
-export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, message }) => {
+export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, message, title = 'Error' }) => {
     useEffect(() => {
         if (!isOpen) return;
 
@@ -53,7 +54,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, message
                         </div>
 
                         <div className="flex-1 pt-1">
-                            <h3 className="text-lg font-bold text-white mb-2">Authentication Failed</h3>
+                            <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
                             <p className="text-slate-300 text-sm leading-relaxed">{message}</p>
                         </div>
 

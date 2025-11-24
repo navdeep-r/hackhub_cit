@@ -15,7 +15,7 @@ const ITEMS_PER_PAGE = 20;
 // Department-specific section ranges
 const getSectionsForDepartment = (department: string) => {
     if (!department) return ['All', 'A', 'B', 'C', 'D', 'E', 'F'];
-    
+
     const dept = department.toLowerCase();
     if (dept.includes('cse')) {
         return ['All', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
@@ -67,14 +67,6 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
         if (!hackathon) return { ids, emails };
 
         registrations.forEach(reg => {
-            console.log('[RegistrationsModal] Checking registration:', {
-                regHackathonId: reg.hackathonId,
-                hackathonId: hackathon.id,
-                matches: reg.hackathonId === hackathon.id,
-                studentId: reg.studentId,
-                email: reg.email
-            });
-
             if (reg.hackathonId === hackathon.id) {
                 if (reg.studentId) ids.add(reg.studentId);
                 if (reg.email) emails.add(reg.email);
