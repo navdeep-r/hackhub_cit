@@ -53,15 +53,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
             if (!userId) {
                 throw new Error('User ID is missing');
             }
-            console.log('Saving profile with data:', formData, 'for user ID:', userId);
             const updatedUser = await updateUserProfile(userId, formData);
-            console.log('Profile updated successfully:', updatedUser);
             onUpdateUser(updatedUser);
             setIsEditing(false);
         } catch (error: any) {
             console.error('Failed to update profile:', error);
-            console.error('Error details:', error.message, error.stack);
-            alert(`Failed to update profile: ${error.message || 'Unknown error'}. Check console for details.`);
+            alert(`Failed to update profile: ${error.message || 'Unknown error'}.`);
         } finally {
             setIsLoading(false);
         }
