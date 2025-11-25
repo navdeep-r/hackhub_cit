@@ -50,7 +50,7 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
     const departments = useMemo(() => {
         const depts = new Set<string>();
         allStudents.forEach(s => {
-            if (s.department) depts.add(s.department);
+            if (s.department && s.department !== 'All') depts.add(s.department);
         });
         return ['All', ...Array.from(depts).sort()];
     }, [allStudents]);
