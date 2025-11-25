@@ -505,7 +505,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 onClick={async () => {
                                     setIsLoading(true);
                                     try {
-                                        const user = await googleAuthMock();
+                                        const user = await googleAuthMock('mock.student@citchennai.net', 'Mock Student');
                                         onLogin(user);
                                     } catch (err: any) {
                                         setError(err.message);
