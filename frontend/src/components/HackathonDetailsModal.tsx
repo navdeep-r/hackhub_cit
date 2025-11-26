@@ -23,7 +23,9 @@ export const HackathonDetailsModal: React.FC<HackathonDetailsModalProps> = ({ is
         setLoading(true);
         try {
             const allRegs = await getRegistrations();
-            const relevantRegs = allRegs.filter(r => r.hackathonId === hackathon?.id);
+            const relevantRegs = allRegs.filter(r =>
+                hackathon?.id && r.hackathonId && String(r.hackathonId) === String(hackathon.id)
+            );
             setRegistrations(relevantRegs);
         } catch (error) {
             console.error('Error fetching registrations:', error);

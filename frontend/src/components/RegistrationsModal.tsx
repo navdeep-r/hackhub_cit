@@ -60,6 +60,7 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
         return getSectionsForDepartment(departmentFilter === 'All' ? '' : departmentFilter);
     }, [departmentFilter]);
 
+
     // Get registered student IDs and emails for this hackathon
     const registeredIds = useMemo(() => {
         const ids = new Set<string>();
@@ -67,10 +68,12 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
         if (!hackathon) return { ids, emails };
 
         registrations.forEach(reg => {
-            if (reg.hackathonId === hackathon.id) {
+            // Strict check: Ensure both IDs exist and match exactly
+            if (hackathon.id && reg.hackathonId && String(reg.hackathonId) === String(hackathon.id)) {
                 if (reg.studentId) ids.add(reg.studentId);
-                if (reg.email) emails.add(reg.email);
-                if (reg.studentEmail) emails.add(reg.studentEmail);
+                // Only add emails if they're non-empty strings
+                if (reg.email && reg.email.length > 0) emails.add(reg.email);
+                if (reg.studentEmail && reg.studentEmail.length > 0) emails.add(reg.studentEmail);
             }
         });
 

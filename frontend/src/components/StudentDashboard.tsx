@@ -274,8 +274,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                   <div className="pr-10 mb-2 flex-1 flex flex-col">
                     <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
                     <div className="flex-1 flex items-center">
-                      <p className="text-slate-400 text-sm leading-tight line-clamp-2" title={h.description}>
-                        {truncateTextByWords(h.description || 'No description provided.', 15)}
+                      <p className="text-slate-400 text-sm leading-tight line-clamp-1" title={h.description}>
+                        {h.description || 'No description provided.'}
                       </p>
                     </div>
                   </div>
@@ -331,7 +331,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       </div>
       {activeHackathon && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-3 sm:p-4 backdrop-blur-lg animate-fade-in" onClick={() => setActiveHackathon(null)}>
-          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-slate-700/50 relative max-h-[92vh] overflow-y-auto custom-scrollbar animate-slide-up" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 rounded-3xl w-full max-w-6xl overflow-hidden shadow-2xl border border-slate-700/50 relative max-h-[92vh] overflow-y-auto custom-scrollbar animate-slide-up" onClick={(e) => e.stopPropagation()}>
 
             {/* Enhanced Header with Animated Gradient */}
             <div className="relative h-20 sm:h-20 bg-gradient-to-br from-cyan-600 via-blue-600 to-indigo-700 overflow-hidden">
@@ -369,72 +369,92 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                     {activeHackathon.platform || 'External'}
                   </span>
                 </div>
+              </div>
 
-                {/* Date and Location with Enhanced Icons */}
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="flex items-center gap-2 text-cyan-300 font-semibold bg-cyan-950/30 px-3 py-1.5 rounded-lg border border-cyan-800/50">
-                    <Calendar size={16} className="text-cyan-400" />
-                    {new Date(activeHackathon.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </span>
-                  <span className="flex items-center gap-2 text-slate-300 font-medium bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50">
-                    <MapPin size={16} className="text-slate-400" />
-                    {activeHackathon.location}
-                  </span>
+              {/* Two-Column Layout: Description Left, Details Right */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Left Column: Description */}
+                <div className="lg:col-span-2">
+                  <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 sm:p-6 h-full">
+                    <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <FileText size={16} />
+                      <span>About This Hackathon</span>
+                      <div className="h-px flex-1 bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
+                    </h3>
+                    <div className="text-slate-200 leading-relaxed text-sm sm:text-base whitespace-pre-wrap max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                      {activeHackathon.description || 'No description provided.'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Event Details */}
+                <div className="lg:col-span-1 space-y-4">
+                  {/* Date */}
+                  <div className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 border border-cyan-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-cyan-500/20 rounded-lg">
+                        <Calendar size={14} className="text-cyan-400" />
+                      </div>
+                      <span className="text-xs text-cyan-300/80 uppercase tracking-wider font-bold">Event Date</span>
+                    </div>
+                    <p className="font-black text-cyan-300 text-sm">
+                      {new Date(activeHackathon.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+
+                  {/* Location */}
+                  <div className="bg-gradient-to-br from-slate-500/15 to-slate-600/5 border border-slate-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-slate-500/20 rounded-lg">
+                        <MapPin size={14} className="text-slate-400" />
+                      </div>
+                      <span className="text-xs text-slate-300/80 uppercase tracking-wider font-bold">Location</span>
+                    </div>
+                    <p className="font-bold text-slate-300 text-sm">{activeHackathon.location}</p>
+                  </div>
+
+                  {/* Prize Pool */}
+                  <div className="bg-gradient-to-br from-yellow-500/15 to-yellow-600/5 border border-yellow-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-yellow-500/20 rounded-lg">
+                        <Award size={14} className="text-yellow-400" />
+                      </div>
+                      <span className="text-xs text-yellow-300/80 uppercase tracking-wider font-bold">Prize Pool</span>
+                    </div>
+                    <p className="font-black text-yellow-300 text-sm">{activeHackathon.prizePool || 'TBD'}</p>
+                  </div>
+
+                  {/* Deadline */}
+                  <div className="bg-gradient-to-br from-orange-500/15 to-orange-600/5 border border-orange-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-orange-500/20 rounded-lg">
+                        <Clock size={14} className="text-orange-400" />
+                      </div>
+                      <span className="text-xs text-orange-300/80 uppercase tracking-wider font-bold">Deadline</span>
+                    </div>
+                    <p className="font-black text-orange-300 text-sm">
+                      {activeHackathon.registrationDeadline ? new Date(activeHackathon.registrationDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                    </p>
+                  </div>
+
+                  {/* Platform */}
+                  <div className="bg-gradient-to-br from-indigo-500/15 to-indigo-600/5 border border-indigo-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+                        <Globe size={14} className="text-indigo-400" />
+                      </div>
+                      <span className="text-xs text-indigo-300/80 uppercase tracking-wider font-bold">Platform</span>
+                    </div>
+                    <p className="font-black text-indigo-300 text-sm">{activeHackathon.platform}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Description with Better Typography */}
-              <div className="mb-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 sm:p-6">
-                <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <FileText size={16} />
-                  <span>About This Hackathon</span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
-                </h3>
-                <div className="text-slate-200 leading-relaxed text-sm sm:text-base whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                  {activeHackathon.description || 'No description provided.'}
-                </div>
-              </div>
-
-              {/* Enhanced Info Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                <div className="group bg-gradient-to-br from-yellow-500/15 to-yellow-600/5 border border-yellow-500/30 rounded-xl p-4 hover:from-yellow-500/20 hover:to-yellow-600/10 transition-all hover:scale-[1.02] cursor-default">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 bg-yellow-500/20 rounded-lg">
-                      <Award size={14} className="text-yellow-400" />
-                    </div>
-                    <span className="text-xs text-yellow-300/80 uppercase tracking-wider font-bold">Prize Pool</span>
-                  </div>
-                  <p className="font-black text-yellow-300 text-base sm:text-lg truncate">{activeHackathon.prizePool || 'TBD'}</p>
-                </div>
-
-                <div className="group bg-gradient-to-br from-orange-500/15 to-orange-600/5 border border-orange-500/30 rounded-xl p-4 hover:from-orange-500/20 hover:to-orange-600/10 transition-all hover:scale-[1.02] cursor-default">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 bg-orange-500/20 rounded-lg">
-                      <Clock size={14} className="text-orange-400" />
-                    </div>
-                    <span className="text-xs text-orange-300/80 uppercase tracking-wider font-bold">Deadline</span>
-                  </div>
-                  <p className="font-black text-orange-300 text-sm sm:text-base truncate">
-                    {activeHackathon.registrationDeadline ? new Date(activeHackathon.registrationDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
-                  </p>
-                </div>
-
-                <div className="group bg-gradient-to-br from-indigo-500/15 to-indigo-600/5 border border-indigo-500/30 rounded-xl p-4 hover:from-indigo-500/20 hover:to-indigo-600/10 transition-all hover:scale-[1.02] cursor-default col-span-2 sm:col-span-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 bg-indigo-500/20 rounded-lg">
-                      <Globe size={14} className="text-indigo-400" />
-                    </div>
-                    <span className="text-xs text-indigo-300/80 uppercase tracking-wider font-bold">Platform</span>
-                  </div>
-                  <p className="font-black text-indigo-300 text-base sm:text-lg truncate">{activeHackathon.platform}</p>
-                </div>
-              </div>
-
-              {/* Enhanced Categories Section */}
+              {/* Categories Section - Full Width Below */}
               {activeHackathon.categories && activeHackathon.categories.length > 0 && (
                 <div className="mb-6">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -454,6 +474,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                   </div>
                 </div>
               )}
+
+              {/* Remove old info grid - it's now in the right column */}
+              <div className="hidden">
+              </div>
 
               {/* Action Buttons with Better Styling */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-800/50">
