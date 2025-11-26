@@ -48,7 +48,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [activeHackathon, setActiveHackathon] = useState<Hackathon | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -62,7 +62,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     };
     loadData();
   }, []);
-
+  // Countdown timer effect
+  useEffect(() => {
+    if (!activeHackathon?.registrationDeadline) return;
+    const updateCountdown = () => {
+      const now = Date.now();
+      const deadline = new Date(activeHackathon.registrationDeadline).getTime();
+      const difference = deadline - now;
+      if (difference > 0) {
+        setCountdown({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        });
+      } else {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [activeHackathon]);
   const handleViewDetails = async (h: Hackathon) => {
     await incrementImpression(h.id);
     setActiveHackathon(h);
@@ -349,8 +370,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                 <X size={20} />
               </button>
             </div>
-
-            {/* Floating Trophy Icon */}
             <div className="px-6 sm:px-8 relative -mt-8 flex justify-between items-end mb-4">
               <div className="group w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border-3 border-slate-900 flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform">
                 <Trophy size={24} className="text-cyan-400 group-hover:text-cyan-300 transition-colors sm:w-8 sm:h-8" />
@@ -370,6 +389,67 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                   </span>
                 </div>
               </div>
+              {/* Countdown Timer - Compact Animated UI */}
+              {activeHackathon.registrationDeadline && (
+                <div className="mb-4 relative overflow-hidden rounded-xl bg-slate-900/60 border border-orange-400/30 p-4 backdrop-blur-md">
+
+                  {/* Soft floating glow animation */}
+                  <div className="absolute -top-16 -right-16 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl animate-float" />
+                  <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl animate-float delay-300" />
+
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Clock className="text-orange-300 animate-pulse" size={18} />
+                      <h3 className="text-xs font-semibold text-orange-200 tracking-wider">
+                        Registration Closes In
+                      </h3>
+                    </div>
+
+                    {/* Timer Grid */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { label: "Days", value: countdown.days, color: "orange" },
+                        { label: "Hours", value: countdown.hours, color: "red" },
+                        { label: "Mins", value: countdown.minutes, color: "pink" },
+                        { label: "Secs", value: countdown.seconds, color: "rose" },
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className={`bg-slate-900/70 rounded-lg p-2 border border-${item.color}-500/30 text-center hover:scale-105 transition-all duration-200`}
+                        >
+                          <div
+                            className={`text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-${item.color}-300 to-${item.color}-500 tabular-nums`}
+                          >
+                            {String(item.value).padStart(2, "0")}
+                          </div>
+                          <div
+                            className={`text-[10px] font-bold text-${item.color}-300/80 uppercase tracking-wider`}
+                          >
+                            {item.label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Deadline */}
+                    <p className="mt-3 text-[10px] text-orange-200/60 text-center">
+                      Deadline:{" "}
+                      {new Date(activeHackathon.registrationDeadline).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Two-Column Layout: Description Left, Details Right */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

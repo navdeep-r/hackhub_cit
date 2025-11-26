@@ -445,9 +445,9 @@ export const FacultyDashboard: React.FC = () => {
                 </div>
 
                 {/* Card Body */}
-                <div className="p-3 flex-1 flex flex-col relative">
+                <div className="p-1 flex-1 flex flex-col relative">
                   {/* Desktop Actions */}
-                  <div className="absolute top-3 right-3 hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="absolute top-5 right-5 hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" title="View Details">
                       <Info size={14} />
                     </button>
@@ -526,7 +526,7 @@ export const FacultyDashboard: React.FC = () => {
 
       {/* 3. Create/Edit Tab (Separate Section) */}
       {activeTab === 'create' && (
-        <div className="animate-fade-in max-w-4xl mx-auto">
+        <div className="animate-fade-in max-w-6xl mx-auto">
           <div className="glass-panel rounded-2xl p-8 border border-slate-700 shadow-2xl">
             <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
               <div>
