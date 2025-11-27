@@ -150,7 +150,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   // Filter Logic - Only include active (non-expired) hackathons
   const today = Date.now();
   const activeRegistrationIds = registrations
-    .filter(r => r.studentId === user.id || r.email === user.email || r.studentEmail === user.email)
+    .filter(r =>
+      (r.studentId && user.id && r.studentId === user.id) ||
+      (r.email && r.email.length > 0 && user.email && user.email.length > 0 && r.email === user.email) ||
+      (r.studentEmail && r.studentEmail.length > 0 && user.email && user.email.length > 0 && r.studentEmail === user.email)
+    )
     .map(r => r.hackathonId)
     .filter(id => {
       const hackathon = hackathons.find(h => h.id === id);
@@ -159,7 +163,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       return eventDate >= today; // Only include hackathons that haven't passed yet
     });
 
-  const myRegistrationIds = registrations.filter(r => r.studentId === user.id || r.email === user.email || r.studentEmail === user.email).map(r => r.hackathonId);
+  const myRegistrationIds = registrations.filter(r =>
+    (r.studentId && user.id && r.studentId === user.id) ||
+    (r.email && r.email.length > 0 && user.email && user.email.length > 0 && r.email === user.email) ||
+    (r.studentEmail && r.studentEmail.length > 0 && user.email && user.email.length > 0 && r.studentEmail === user.email)
+  ).map(r => r.hackathonId);
 
   const registeredHackathons = hackathons.filter(h => myRegistrationIds.includes(h.id));
 
