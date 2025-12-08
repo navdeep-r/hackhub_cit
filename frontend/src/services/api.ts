@@ -4,18 +4,19 @@ import { Hackathon, Registration, StudentProfile, User } from '../types';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
 
 // --- Auth ---
-export const loginUser = async (credentials: any): Promise<User> => {
+export const loginUser = async (credentials: any): Promise<{ user: User, token: string }> => {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(credentials)
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
-  return data.user;
+  return data;
 };
 
-export const signupUser = async (userData: any): Promise<User> => {
+export const signupUser = async (userData: any): Promise<{ user: User, token: string }> => {
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,10 +24,10 @@ export const signupUser = async (userData: any): Promise<User> => {
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
-  return data.user;
+  return data;
 };
 
-export const googleAuthMock = async (email: string, name: string): Promise<User> => {
+export const googleAuthMock = async (email: string, name: string): Promise<{ user: User, token: string }> => {
   const res = await fetch(`${API_BASE}/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,7 +35,7 @@ export const googleAuthMock = async (email: string, name: string): Promise<User>
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
-  return data.user;
+  return data;
 };
 
 // --- Hackathons ---

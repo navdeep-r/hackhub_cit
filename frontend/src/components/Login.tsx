@@ -72,11 +72,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         try {
             if (mode === 'LOGIN') {
-                const user = await loginUser({
+                const data = await loginUser({
                     email: formData.email,
                     password: formData.password
                 });
-                onLogin(user);
+
+                localStorage.setItem("auth_token", data.token);
+                onLogin(data.user);
             } else {
                 // Signup Logic - email validation now done on backend
                 const payload: any = {
@@ -99,8 +101,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     payload.secretCode = formData.secretCode;
                 }
 
-                const user = await signupUser(payload);
-                onLogin(user);
+                const data = await signupUser(payload);
+                localStorage.setItem("auth_token", data.token);
+                onLogin(data.user);
             }
         } catch (err: any) {
             setError(err.message || 'Authentication failed');
@@ -505,8 +508,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 onClick={async () => {
                                     setIsLoading(true);
                                     try {
-                                        const user = await googleAuthMock('mock.student@citchennai.net', 'Mock Student');
-                                        onLogin(user);
+                                        const data = await googleAuthMock('mock.student@citchennai.net', 'Mock Student');
+                                        onLogin(data.user);
                                     } catch (err: any) {
                                         setError(err.message);
                                         setShowErrorModal(true);

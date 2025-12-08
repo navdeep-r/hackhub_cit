@@ -112,34 +112,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   };
 
   const handleRegister = async () => {
-    if (activeHackathon && user) {
-      if (registrations.some(r => r.hackathonId === activeHackathon.id && r.studentId === user.id)) {
-        return;
+    if (!activeHackathon || !user) return;
+
+    // If already registered, do nothing
+    if (registrations.some(r =>
+      r.hackathonId === activeHackathon.id &&
+      r.studentId === user.id
+    )) {
+      return;
+    }
+
+    try {
+      // Open external link
+      if (activeHackathon.registrationLink) {
+        window.open(activeHackathon.registrationLink, "_blank");
       }
 
-      const newRegistration: Registration = {
-        hackathonId: activeHackathon.id,
-        studentId: user.id,
-        studentName: user.name,
-        email: user.email, // Match backend schema
-        studentEmail: user.email, // Keep for frontend consistency if needed
-        registeredAt: Date.now()
-      };
+      // close modal
+      setActiveHackathon(null);
 
-      try {
-        await registerStudent(newRegistration);
-        setRegistrations(prev => [...prev, newRegistration]);
-
-        triggerConfetti();
-
-        // If external link exists, don't close modal immediately, let user click link
-        if (!activeHackathon.registrationLink) {
-          setActiveHackathon(null);
-        }
-      } catch (error: any) {
-        console.error('Registration failed:', error);
-        alert('Failed to register: ' + (error.message || 'Unknown error'));
-      }
+    } catch (error: any) {
+      console.error('launch failed:', error);
+      alert('Something went wrong');
     }
   };
 

@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getStudentProfile } from './services/api';
 import { HashRouter as Router } from 'react-router-dom';
 import { Code2, LogOut } from 'lucide-react';
 import { UserRole, User } from './types';
@@ -12,13 +13,50 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // Restore user on page reload
+  useEffect(() => {
+    async function restoreUser() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUser(data.user);
+        }
+      } catch { }
+    }
+    restoreUser();
+  }, []);
+
+
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
     setUser(null);
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+
+    fetch('/api/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setUser(data.user);
+      })
+      .catch(err => console.error("Auto-login failed", err));
+  }, []);
 
   return (
     <Router>

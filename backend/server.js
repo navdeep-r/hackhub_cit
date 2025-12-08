@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 // Import Models
 const Hackathon = require('./models/Hackathon');
@@ -14,9 +15,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
+
 
 // --- DATABASE CONNECTION ---
 // If you have a cloud URL, put it in a .env file as MONGODB_URI
@@ -375,6 +381,7 @@ app.get('/api/users/students', async (req, res) => {
 
 // Signup Route
 app.post('/api/auth/signup', async (req, res) => {
+  console.log("called /api/auth/signup")
   try {
     // Removed console.log statements
 
@@ -488,11 +495,39 @@ app.post('/api/auth/login', async (req, res) => {
     const { password: _, ...userWithoutPassword } = user.toObject();
 
     // Removed console.log
-    res.json({ success: true, user: userWithoutPassword, token });
+    res
+      .cookie("auth_token", token, {
+        httpOnly: true,
+        secure: false, // set true in production
+        sameSite: "Lax"
+      })
+      .json({ success: true, user: userWithoutPassword });
   } catch (err) {
     console.error('❌ Login Error:', err);
     console.error('Error stack:', err.stack);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+  }
+});
+
+// Restore session from cookie
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const token = req.cookies.auth_token;
+    if (!token) {
+      return res.status(401).json({ success: false });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error('❌ Me Auth Error:', err);
+    return res.status(401).json({ success: false });
   }
 });
 
@@ -531,6 +566,100 @@ app.post('/api/auth/google', async (req, res) => {
     console.error('Google Auth Error:', err);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
+});
+
+// --- EXTENSION REAL REGISTRATION ROUTE ---
+app.post('/api/extension-webhook', async (req, res) => {
+  console.log("========= EXTENSION WEBHOOK HIT =========");
+  console.log("📩 RAW BODY:", JSON.stringify(req.body, null, 2));
+  console.log("🍪 COOKIES:", req.cookies);
+  console.log("=========================================");
+  try {
+    const { userToken, currentUrl, keyword, domain } = req.body;
+
+    if (!userToken) {
+      return res.status(401).json({ success: false, error: 'Missing token' });
+    }
+
+    // decode JWT
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        userToken,
+        process.env.JWT_SECRET || 'fallback_secret'
+      );
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    // find user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // match exact registrationLink (or startsWith for safety)
+    const hackathon = await Hackathon.findOne({
+      registrationLink: { $regex: currentUrl, $options: 'i' }
+    });
+
+    if (!hackathon) {
+      return res.status(404).json({
+        success: false,
+        error: 'No matching hackathon for this external page'
+      });
+    }
+
+    // duplicate check
+    const existing = await Registration.findOne({
+      hackathonId: hackathon._id,
+      studentId: user._id
+    });
+
+    if (existing) {
+      return res.json({
+        success: true,
+        message: 'Already registered',
+        registration: existing
+      });
+    }
+
+    // create registration
+    // create registration
+    const reg = new Registration({
+      studentId: user._id.toString(),
+      studentName: user.name,
+      email: user.email,
+      hackathonId: hackathon._id,
+      department: user.department || '',
+      section: user.section || '',
+      status: 'pending'
+    });
+
+    const saved = await reg.save();
+
+    return res.json({
+      success: true,
+      message: 'Registered via extension',
+      registration: saved,
+      clearedCookie: true
+    });
+
+  } catch (error) {
+    console.error('❌ Extension registration error:', error);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Lax',
+    path: '/'
+  });
+
+  return res.json({ success: true });
 });
 
 // Start Server
