@@ -12,11 +12,12 @@ const Registration = require('./models/Registration');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const VITE_API_BASE_PORT = process.env.VITE_API_BASE_PORT || 5000;
+const FRONTEND_API_URL = process.env.FRONTEND_API_URL || "http://localhost:5173";
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: FRONTEND_API_URL,
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -663,6 +664,6 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(VITE_API_BASE_PORT, () => {
+  console.log(`🚀 Server running on ${VITE_API_BASE_PORT}`);
 });
