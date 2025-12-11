@@ -28,6 +28,10 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- API ROUTES ---
+SHOW_LOGS && app.use((req, res, next) => {
+  console.log(req.url);
+  next();
+});
 app.use('/api', api);
 
 /*

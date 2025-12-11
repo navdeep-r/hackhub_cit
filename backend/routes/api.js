@@ -5,6 +5,7 @@ import profile from './profile.js';
 import registrations from './registration.js';
 import analytics from './analytics.js';
 import users from './users.js';
+import extension_webhook from './extension-webhook.js';
 
 const api = Router();
 
@@ -14,5 +15,6 @@ api.use('/profile', profile);
 api.use('/registrations', registrations);
 api.use('/analytics', analytics);
 api.use('/users', users);
+api.use('/extension-webhook', extension_webhook);
 
 export default api;
