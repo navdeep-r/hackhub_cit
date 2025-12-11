@@ -5,7 +5,6 @@ const registrationSchema = new mongoose.Schema({
   email: { type: String, required: true },
   studentId: { type: String }, // Added studentId
   hackathonId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hackathon' },
-  status: { type: String, default: 'pending' },
   registeredAt: { type: Date, default: Date.now },
   department: { type: String }, // Added department field
   section: { type: String } // Added section field

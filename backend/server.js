@@ -272,7 +272,6 @@ app.post('/api/registrations', async (req, res) => {
       studentName: savedRegistration.studentName,
       email: savedRegistration.email,
       studentEmail: savedRegistration.email,
-      status: savedRegistration.status,
       registeredAt: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now(),
       timestamp: savedRegistration.registeredAt ? new Date(savedRegistration.registeredAt).getTime() : Date.now(),
       department: savedRegistration.department,
@@ -302,7 +301,6 @@ app.get('/api/registrations', async (req, res) => {
       studentName: reg.studentName,
       email: reg.email,
       studentEmail: reg.email, // Map email to studentEmail for backward compatibility
-      status: reg.status,
       registeredAt: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now(),
       timestamp: reg.registeredAt ? new Date(reg.registeredAt).getTime() : Date.now(),
       department: reg.department,
@@ -674,7 +672,6 @@ app.post('/api/extension-webhook', async (req, res) => {
       hackathonId: hackathon._id,
       department: user.department || '',
       section: user.section || '',
-      status: 'pending'
     });
 
     const saved = await reg.save();

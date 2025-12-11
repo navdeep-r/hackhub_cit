@@ -18,7 +18,6 @@ export interface Registration {
     id?: string;
     hackathonId: string;
     studentId?: string;
-    status?: string;
     timestamp?: number;
     studentName?: string;
     studentEmail?: string;
