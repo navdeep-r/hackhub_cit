@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const registrationSchema = new mongoose.Schema({
   studentName: { type: String, required: true },
@@ -11,4 +11,4 @@ const registrationSchema = new mongoose.Schema({
   section: { type: String } // Added section field
 });
 
-module.exports = mongoose.model('Registration', registrationSchema);
+export default mongoose.model('Registration', registrationSchema);

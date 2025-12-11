@@ -1,16 +1,18 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
+import { config } from "dotenv";
+import express from 'express';
+import cors from "cors";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 
 // Import Models
-const Hackathon = require('./models/Hackathon');
-const Registration = require('./models/Registration');
-const User = require('./models/User');
+import Hackathon from "./models/Hackathon.js";
+import Registration from "./models/Registration.js";
+import User from "./models/User.js";
 
+// Definitions
+config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
