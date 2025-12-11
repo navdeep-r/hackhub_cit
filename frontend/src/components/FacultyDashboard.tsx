@@ -9,7 +9,7 @@ import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
 import { ErrorModal } from './ErrorModal';
 
-const NODE_ENV = process.env.NODE_ENV || "developement";
+const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 

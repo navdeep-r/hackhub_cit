@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera } from 'lucide-react';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 
-const NODE_ENV = process.env.NODE_ENV || "developement";
+const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 

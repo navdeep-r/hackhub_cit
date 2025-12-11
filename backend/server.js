@@ -14,7 +14,7 @@ const User = require('./models/User');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
-const NODE_ENV = process.env.NODE_ENV || "developement";
+const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 

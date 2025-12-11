@@ -10,7 +10,7 @@ import { Login } from './components/Login';
 import { ProfileModal } from './components/ProfileModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
-const NODE_ENV = process.env.NODE_ENV || "developement";
+const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
