@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     // Enable HTML5 History API fallback for SPA routing
-    historyApiFallback: true,
+    // historyApiFallback: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

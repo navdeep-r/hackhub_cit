@@ -9,6 +9,8 @@ import { StudentDashboard } from './components/StudentDashboard';
 import { Login } from './components/Login';
 import { ProfileModal } from './components/ProfileModal';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -17,7 +19,8 @@ const App: React.FC = () => {
   useEffect(() => {
     async function restoreUser() {
       try {
-        const res = await fetch('/api/auth/me', {
+        console.log(`log1: /${API_BASE}/auth/me`)
+        const res = await fetch(`${API_BASE}/auth/me`, {
           credentials: 'include'
         });
         const data = await res.json();
@@ -35,28 +38,13 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', {
+    console.log(`log1: /${API_BASE}/auth/logout`)
+    await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       credentials: 'include'
     });
     setUser(null);
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) return;
-
-    fetch('/api/auth/me', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setUser(data.user);
-      })
-      .catch(err => console.error("Auto-login failed", err));
-  }, []);
 
   return (
     <Router>

@@ -12,17 +12,19 @@ const Registration = require('./models/Registration');
 const User = require('./models/User');
 
 const app = express();
-const VITE_API_BASE_PORT = process.env.VITE_API_BASE_PORT || 5000;
-const FRONTEND_API_URL = process.env.FRONTEND_API_URL || "http://localhost:5173";
+const PORT = process.env.PORT || 5000;
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+const NODE_ENV = process.env.NODE_ENV || "developement";
+const isProduction = NODE_ENV == "production";
 
 // Middleware
+app.use(cookieParser());
 app.use(cors({
-  origin: FRONTEND_API_URL,
+  origin: FRONTEND_ORIGIN,
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cookieParser());
 
 
 // --- DATABASE CONNECTION ---
@@ -451,6 +453,14 @@ app.post('/api/auth/signup', async (req, res) => {
     // Return user data without password
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
 
+    res
+      .cookie("auth_token", token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        path: '/',
+      })
+
     res.status(201).json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
     console.error('❌ Signup Error:', err);
@@ -499,8 +509,9 @@ app.post('/api/auth/login', async (req, res) => {
     res
       .cookie("auth_token", token, {
         httpOnly: true,
-        secure: false, // set true in production
-        sameSite: "Lax"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        path: '/',
       })
       .json({ success: true, user: userWithoutPassword });
   } catch (err) {
@@ -655,8 +666,8 @@ app.post('/api/extension-webhook', async (req, res) => {
 app.post('/api/auth/logout', (req, res) => {
   res.clearCookie('auth_token', {
     httpOnly: true,
-    secure: false,
-    sameSite: 'Lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'Lax',
     path: '/'
   });
 
@@ -664,6 +675,6 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Start Server
-app.listen(VITE_API_BASE_PORT, () => {
-  console.log(`🚀 Server running on ${VITE_API_BASE_PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on ${PORT}`);
 });
