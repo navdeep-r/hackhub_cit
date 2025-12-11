@@ -22,7 +22,7 @@ const App: React.FC = () => {
   useEffect(() => {
     async function restoreUser() {
       try {
-        SHOW_LOGS || console.log(`log1: /${API_BASE}/auth/me`)
+        SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/me`)
         const res = await fetch(`${API_BASE}/auth/me`, {
           credentials: 'include'
         });
@@ -41,7 +41,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    SHOW_LOGS || console.log(`log1: /${API_BASE}/auth/logout`)
+    SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/logout`)
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       credentials: 'include'

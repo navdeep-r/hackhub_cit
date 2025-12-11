@@ -68,7 +68,7 @@ export const FacultyDashboard: React.FC = () => {
         const rData = await getRegistrations();
         setRegistrations(rData);
       } catch (regError) {
-        SHOW_LOGS || console.error('Error fetching registrations (continuing anyway):', regError);
+        SHOW_LOGS && console.error('Error fetching registrations (continuing anyway):', regError);
         // Set empty array for registrations to prevent undefined errors
         setRegistrations([]);
       }
@@ -78,10 +78,10 @@ export const FacultyDashboard: React.FC = () => {
         const students = await getAllStudents();
         setAllStudents(students);
       } catch (err) {
-        SHOW_LOGS || console.warn('Failed to fetch students:', err);
+        SHOW_LOGS && console.warn('Failed to fetch students:', err);
       }
     } catch (error) {
-      SHOW_LOGS || console.error('Error refreshing data:', error);
+      SHOW_LOGS && console.error('Error refreshing data:', error);
     }
   };
 
@@ -196,7 +196,7 @@ export const FacultyDashboard: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       await refreshData();
     } catch (error: any) {
-      SHOW_LOGS || console.error('Error saving hackathon:', error);
+      SHOW_LOGS && console.error('Error saving hackathon:', error);
       setFormError('Failed to save hackathon: ' + (error.message || 'Unknown error'));
       setErrorModalOpen(true);
     }
@@ -215,7 +215,7 @@ export const FacultyDashboard: React.FC = () => {
         setDeleteModalOpen(false);
         setHackathonToDelete(null);
       } catch (error: any) {
-        SHOW_LOGS || console.error('Error deleting hackathon:', error);
+        SHOW_LOGS && console.error('Error deleting hackathon:', error);
         alert('Failed to delete hackathon: ' + (error.message || 'Unknown error'));
       }
     }
@@ -245,7 +245,7 @@ export const FacultyDashboard: React.FC = () => {
       const desc = await generateHackathonDescription(formData.title, aiPrompt || 'Innovation, Coding, Fun');
       setFormData(prev => ({ ...prev, description: desc }));
     } catch (e) {
-      SHOW_LOGS || console.error("AI Error", e);
+      SHOW_LOGS && console.error("AI Error", e);
     }
     setIsGenerating(false);
   };
@@ -258,7 +258,7 @@ export const FacultyDashboard: React.FC = () => {
       const insight = await analyzeEngagementTrends(jsonStr);
       setAiAnalysis(insight);
     } catch (e) {
-      SHOW_LOGS || console.error("AI Error", e);
+      SHOW_LOGS && console.error("AI Error", e);
     }
     setIsAnalyzing(false);
   };

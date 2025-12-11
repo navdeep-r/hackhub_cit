@@ -32,7 +32,7 @@ export const HackathonDetailsModal: React.FC<HackathonDetailsModalProps> = ({ is
             );
             setRegistrations(relevantRegs);
         } catch (error) {
-            SHOW_LOGS || console.error('Error fetching registrations:', error);
+            SHOW_LOGS && console.error('Error fetching registrations:', error);
         } finally {
             setLoading(false);
         }

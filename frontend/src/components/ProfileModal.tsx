@@ -61,7 +61,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
             onUpdateUser(updatedUser);
             setIsEditing(false);
         } catch (error: any) {
-            SHOW_LOGS || console.error('Failed to update profile:', error);
+            SHOW_LOGS && console.error('Failed to update profile:', error);
             alert(`Failed to update profile: ${error.message || 'Unknown error'}.`);
         } finally {
             setIsLoading(false);

@@ -61,7 +61,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         setHackathons(h);
         setRegistrations(r);
       } catch (error) {
-        SHOW_LOGS || console.error("Failed to load dashboard data", error);
+        SHOW_LOGS && console.error("Failed to load dashboard data", error);
       }
     };
     loadData();
@@ -136,7 +136,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       setActiveHackathon(null);
 
     } catch (error: any) {
-      SHOW_LOGS || console.error('launch failed:', error);
+      SHOW_LOGS && console.error('launch failed:', error);
       alert('Something went wrong');
     }
   };

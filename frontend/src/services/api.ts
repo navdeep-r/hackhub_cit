@@ -69,7 +69,7 @@ export const saveHackathon = async (hackathon: Hackathon): Promise<Hackathon> =>
       throw new Error(errorData.error || 'Failed to save hackathon');
     } else {
       const errorText = await res.text();
-      SHOW_LOGS || console.error('Non-JSON error response:', errorText.substring(0, 200));
+      SHOW_LOGS && console.error('Non-JSON error response:', errorText.substring(0, 200));
       throw new Error('Server returned non-JSON response. Please check backend server is running and restart it if needed.');
     }
   }
