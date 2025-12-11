@@ -17,13 +17,6 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 const NODE_ENV = process.env.NODE_ENV || "developement";
 const isProduction = NODE_ENV == "production";
 
-// Log environment configuration (helpful for debugging deployment issues)
-console.log('🌍 Environment Configuration:');
-console.log('   PORT:', PORT);
-console.log('   FRONTEND_ORIGIN:', FRONTEND_ORIGIN);
-console.log('   NODE_ENV:', NODE_ENV);
-console.log('   isProduction:', isProduction);
-
 // Middleware
 app.use(cookieParser());
 
@@ -33,14 +26,22 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    // Check if the origin is allowed
-    if (origin === FRONTEND_ORIGIN) {
-      callback(null, true);
-    } else {
-      console.log('❌ CORS blocked origin:', origin);
-      console.log('   Expected:', FRONTEND_ORIGIN);
-      callback(new Error('Not allowed by CORS'));
+    // ✅ Allow ALL Chrome extensions - check FIRST
+    if (origin.startsWith('chrome-extension://')) {
+      console.log('✅ Chrome extension allowed:', origin);
+      return callback(null, true);
     }
+
+    // Check if the origin is the frontend
+    if (origin === FRONTEND_ORIGIN) {
+      console.log('✅ Frontend allowed:', origin);
+      return callback(null, true);
+    }
+
+    // Everything else is blocked
+    console.log('❌ CORS blocked origin:', origin);
+    console.log('   Expected:', FRONTEND_ORIGIN);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
