@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera } from 'lucide-react';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 
+const NODE_ENV = process.env.NODE_ENV || "developement";
+const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {
   if (!text || typeof text !== 'string') return 'No description provided.';
@@ -57,7 +61,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         setHackathons(h);
         setRegistrations(r);
       } catch (error) {
-        console.error("Failed to load dashboard data", error);
+        SHOW_LOGS || console.error("Failed to load dashboard data", error);
       }
     };
     loadData();
@@ -132,7 +136,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       setActiveHackathon(null);
 
     } catch (error: any) {
-      console.error('launch failed:', error);
+      SHOW_LOGS || console.error('launch failed:', error);
       alert('Something went wrong');
     }
   };

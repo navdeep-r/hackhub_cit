@@ -10,6 +10,9 @@ import { Login } from './components/Login';
 import { ProfileModal } from './components/ProfileModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
+const NODE_ENV = process.env.NODE_ENV || "developement";
+const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -19,7 +22,7 @@ const App: React.FC = () => {
   useEffect(() => {
     async function restoreUser() {
       try {
-        console.log(`log1: /${API_BASE}/auth/me`)
+        SHOW_LOGS || console.log(`log1: /${API_BASE}/auth/me`)
         const res = await fetch(`${API_BASE}/auth/me`, {
           credentials: 'include'
         });
@@ -38,7 +41,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    console.log(`log1: /${API_BASE}/auth/logout`)
+    SHOW_LOGS || console.log(`log1: /${API_BASE}/auth/logout`)
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       credentials: 'include'

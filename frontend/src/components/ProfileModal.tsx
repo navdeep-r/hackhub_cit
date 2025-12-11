@@ -3,6 +3,10 @@ import { User, UserRole } from '../types';
 import { X, Save, Loader2, Mail, Building, Calendar, Hash, User as UserIcon, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, BookOpen, Camera, Trophy } from 'lucide-react';
 import { updateUserProfile } from '../services/api';
 
+const NODE_ENV = process.env.NODE_ENV || "developement";
+const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+
 interface ProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -57,7 +61,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
             onUpdateUser(updatedUser);
             setIsEditing(false);
         } catch (error: any) {
-            console.error('Failed to update profile:', error);
+            SHOW_LOGS || console.error('Failed to update profile:', error);
             alert(`Failed to update profile: ${error.message || 'Unknown error'}.`);
         } finally {
             setIsLoading(false);

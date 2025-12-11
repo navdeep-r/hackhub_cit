@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 const NODE_ENV = process.env.NODE_ENV || "developement";
 const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 // Log environment configuration (helpful for debugging deployment issues)
 console.log('🌍 Environment Configuration:');
@@ -59,10 +60,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hackhub';
 
 mongoose.connect(mongoURI)
-  .then(() => console.log('✅ MongoDB Connected (Actual Data Storage)'))
+  .then(() => SHOW_LOGS || console.log('✅ MongoDB Connected (Actual Data Storage)'))
   .catch(err => {
-    console.error('❌ MongoDB Connection Error:', err);
-    console.log('⚠️  Starting server without database connection');
+    SHOW_LOGS || console.error('❌ MongoDB Connection Error:', err);
+    SHOW_LOGS || console.log('⚠️  Starting server without database connection');
   });
 
 // --- API ROUTES ---
@@ -95,7 +96,7 @@ app.get('/api/hackathons', async (req, res) => {
 
     res.json(transformedHackathons);
   } catch (err) {
-    console.error('Error fetching hackathons:', err);
+    SHOW_LOGS || console.error('Error fetching hackathons:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -139,7 +140,7 @@ app.post('/api/hackathons', async (req, res) => {
 
     res.status(201).json(hackathonResponse);
   } catch (err) {
-    console.error('Error saving hackathon:', err);
+    SHOW_LOGS || console.error('Error saving hackathon:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -186,7 +187,7 @@ app.put('/api/hackathons/:id', async (req, res) => {
 
     res.json(hackathonResponse);
   } catch (err) {
-    console.error('Error updating hackathon:', err);
+    SHOW_LOGS || console.error('Error updating hackathon:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -308,7 +309,7 @@ app.get('/api/registrations', async (req, res) => {
 
     res.json(transformedRegistrations);
   } catch (err) {
-    console.error('Error fetching registrations:', err);
+    SHOW_LOGS || console.error('Error fetching registrations:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -385,7 +386,7 @@ app.put('/api/profile/:id', async (req, res) => {
 
     res.json({ success: true, user: userWithoutPassword });
   } catch (err) {
-    console.error('Profile Update Error:', err);
+    SHOW_LOGS || console.error('Profile Update Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -401,7 +402,7 @@ app.get('/api/users/students', async (req, res) => {
     const students = await User.find({ role: 'STUDENT' }).select('-password').sort({ name: 1 });
     res.json(students);
   } catch (err) {
-    console.error('Error fetching students:', err);
+    SHOW_LOGS || console.error('Error fetching students:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -410,7 +411,7 @@ app.get('/api/users/students', async (req, res) => {
 
 // Signup Route
 app.post('/api/auth/signup', async (req, res) => {
-  console.log("called /api/auth/signup")
+  SHOW_LOGS || console.log("called /api/auth/signup")
   try {
     // Removed console.log statements
 
@@ -489,8 +490,8 @@ app.post('/api/auth/signup', async (req, res) => {
 
     res.status(201).json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
-    console.error('❌ Signup Error:', err);
-    console.error('Error stack:', err.stack);
+    SHOW_LOGS || console.error('❌ Signup Error:', err);
+    SHOW_LOGS || console.error('Error stack:', err.stack);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 });
@@ -502,7 +503,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Check if MongoDB is connected
     // Removed console.log
     if (mongoose.connection.readyState !== 1) {
-      console.error('❌ Database not connected');
+      SHOW_LOGS || console.error('❌ Database not connected');
       return res.status(500).json({ success: false, error: 'Database not connected' });
     }
 
@@ -541,8 +542,8 @@ app.post('/api/auth/login', async (req, res) => {
       })
       .json({ success: true, user: userWithoutPassword });
   } catch (err) {
-    console.error('❌ Login Error:', err);
-    console.error('Error stack:', err.stack);
+    SHOW_LOGS || console.error('❌ Login Error:', err);
+    SHOW_LOGS || console.error('Error stack:', err.stack);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 });
@@ -564,7 +565,7 @@ app.get('/api/auth/me', async (req, res) => {
 
     return res.json({ success: true, user });
   } catch (err) {
-    console.error('❌ Me Auth Error:', err);
+    SHOW_LOGS || console.error('❌ Me Auth Error:', err);
     return res.status(401).json({ success: false });
   }
 });
@@ -601,17 +602,17 @@ app.post('/api/auth/google', async (req, res) => {
 
     res.json({ success: true, user: userWithoutPassword, token });
   } catch (err) {
-    console.error('Google Auth Error:', err);
+    SHOW_LOGS || console.error('Google Auth Error:', err);
     res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 });
 
 // --- EXTENSION REAL REGISTRATION ROUTE ---
 app.post('/api/extension-webhook', async (req, res) => {
-  console.log("========= EXTENSION WEBHOOK HIT =========");
-  console.log("📩 RAW BODY:", JSON.stringify(req.body, null, 2));
-  console.log("🍪 COOKIES:", req.cookies);
-  console.log("=========================================");
+  SHOW_LOGS || console.log("========= EXTENSION WEBHOOK HIT =========");
+  SHOW_LOGS || console.log("📩 RAW BODY:", JSON.stringify(req.body, null, 2));
+  SHOW_LOGS || console.log("🍪 COOKIES:", req.cookies);
+  SHOW_LOGS || console.log("=========================================");
   try {
     const { userToken, currentUrl, keyword, domain } = req.body;
 
@@ -684,7 +685,7 @@ app.post('/api/extension-webhook', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Extension registration error:', error);
+    SHOW_LOGS || console.error('❌ Extension registration error:', error);
     res.status(500).json({ success: false, error: 'Internal error' });
   }
 });
@@ -702,5 +703,5 @@ app.post('/api/auth/logout', (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
+  SHOW_LOGS || console.log(`🚀 Server running on ${PORT}`);
 });
