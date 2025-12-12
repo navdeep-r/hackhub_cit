@@ -132,9 +132,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     }
 
     try {
-      // Open external link
+      // Open external link with URL validation
       if (activeHackathon.registrationLink) {
-        window.open(activeHackathon.registrationLink, "_blank");
+        // Sanitize URL - ensure it has a protocol
+        let url = activeHackathon.registrationLink.trim();
+
+        // If URL doesn't start with http:// or https://, add https://
+        if (!url.match(/^https?:\/\//i)) {
+          url = 'https://' + url;
+        }
+
+        SHOW_LOGS && console.log('Opening registration link:', url);
+
+        // Open the link in a new tab
+        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+        // Check if popup was blocked
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked, show user a message
+          alert(`Please allow popups for this site to open the registration page.\n\nAlternatively, copy this link:\n${url}`);
+          return;
+        }
       }
 
       // close modal
@@ -142,7 +160,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
     } catch (error: any) {
       SHOW_LOGS && console.error('launch failed:', error);
-      alert('Something went wrong');
+      alert('Failed to open registration link. Please check your browser settings or try again.');
     }
   };
 
