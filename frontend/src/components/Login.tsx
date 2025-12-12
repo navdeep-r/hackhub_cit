@@ -9,14 +9,14 @@ interface LoginProps {
     onLogin: (user: User) => void;
 }
 
-const DEPARTMENTS = ['CSE', 'CYBERSECURITY', 'AIML', 'AIDS', 'BIOMED', 'MECH', 'EEE', 'ECE', 'IT'];
+const DEPARTMENTS = ['CSE'];
 const YEARS = ['I', 'II', 'III', 'IV'];
 
 // Helper function to get sections based on department
 const getSectionsForDepartment = (department: string): string[] => {
     switch (department) {
         case 'CSE':
-            return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
+            return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
         case 'AIDS':
         case 'AIML':
             return ['A', 'B', 'C'];
