@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera } from 'lucide-react';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
+import { FilterPanel } from './FilterPanel';
 
 const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
@@ -53,6 +54,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const [activeHackathon, setActiveHackathon] = useState<Hackathon | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // Filter states
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -174,42 +179,106 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     .filter(h => !myRegistrationIds.includes(h.id))
     .sort((a, b) => b.createdAt - a.createdAt);
 
-  // Apply search based on active tab
-  const displayedHackathons = (activeTab === 'explore' ? unregisteredHackathons : registeredHackathons).filter(h =>
-    h.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (h.categories && h.categories.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-    (h.tags && h.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
+  // Apply filters: platform, deadline, and search
+  const applyFilters = (hackathonList: Hackathon[]) => {
+    let filtered = hackathonList;
+
+    // Platform filter
+    if (selectedPlatforms.length > 0) {
+      filtered = filtered.filter(h => selectedPlatforms.includes(h.platform));
+    }
+
+    // Deadline filter
+    if (deadlineFilter !== 'all') {
+      const now = Date.now();
+      const weekFromNow = now + (7 * 24 * 60 * 60 * 1000);
+      const monthFromNow = now + (30 * 24 * 60 * 60 * 1000);
+
+      filtered = filtered.filter(h => {
+        if (!h.registrationDeadline) return false;
+        const deadline = new Date(h.registrationDeadline).getTime();
+
+        if (deadlineFilter === 'week') {
+          return deadline >= now && deadline <= weekFromNow;
+        } else if (deadlineFilter === 'month') {
+          return deadline >= now && deadline <= monthFromNow;
+        } else if (deadlineFilter === 'upcoming') {
+          return deadline > monthFromNow;
+        }
+        return true;
+      });
+    }
+
+    // Search filter
+    filtered = filtered.filter(h =>
+      h.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (h.categories && h.categories.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+      (h.tags && h.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
+    );
+
+    // Sort by closest upcoming deadline
+    filtered.sort((a, b) => {
+      const deadlineA = a.registrationDeadline ? new Date(a.registrationDeadline).getTime() : Infinity;
+      const deadlineB = b.registrationDeadline ? new Date(b.registrationDeadline).getTime() : Infinity;
+      return deadlineA - deadlineB; // Closest deadline first
+    });
+
+    return filtered;
+  };
+
+  const displayedHackathons = applyFilters(
+    activeTab === 'explore' ? unregisteredHackathons : registeredHackathons
   );
+
+  // Handler functions for filters
+  const handleClearFilters = () => {
+    setSelectedPlatforms([]);
+    setDeadlineFilter('all');
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
-      {/* Sidebar Profile */}
-      <div className="lg:col-span-3 space-y-6">
-        <div className="glass-panel p-6 rounded-2xl sticky top-24 animate-slide-up">
-          <div className="relative mb-6">
-            <div className={`w-20 h-20 bg-gradient-to-br ${getAvatarGradient(user.profilePicture)} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
-              {React.createElement(getAvatarIcon(user.profilePicture), { size: 36 })}
+      {/* Sidebar Profile & Filters - Made sticky as a unit */}
+      <div className="lg:col-span-3">
+        <div className="sticky top-24 space-y-6">
+          {/* Profile Card */}
+          <div className="glass-panel p-6 rounded-2xl animate-slide-up">
+            <div className="relative mb-6">
+              <div className={`w-20 h-20 bg-gradient-to-br ${getAvatarGradient(user.profilePicture)} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
+                {React.createElement(getAvatarIcon(user.profilePicture), { size: 36 })}
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-slate-900 border border-slate-700 rounded-full p-1.5">
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+              </div>
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-slate-900 border border-slate-700 rounded-full p-1.5">
-              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+
+            <div className="mb-6">
+              <h3 className="font-bold text-xl text-white">{user.name}</h3>
+              <p className="text-sm text-slate-400 font-medium">Year {user.year} Student</p>
+              <p className="text-xs text-slate-500 font-mono mt-1">{user.department}</p>
+              <p className="text-xs text-slate-600 font-mono mt-0.5">ID: {user.registerNo}</p>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h3 className="font-bold text-xl text-white">{user.name}</h3>
-            <p className="text-sm text-slate-400 font-medium">Year {user.year} Student</p>
-            <p className="text-xs text-slate-500 font-mono mt-1">{user.department}</p>
-            <p className="text-xs text-slate-600 font-mono mt-0.5">ID: {user.registerNo}</p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="pt-6 border-t border-slate-800">
-              <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl">
-                <span className="text-slate-400 text-sm">Registered Events</span>
-                <span className="font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-900 px-2.5 py-0.5 rounded-md">{myRegistrationIds.length}</span>
+            <div className="space-y-6">
+              <div className="pt-6 border-t border-slate-800">
+                <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400 text-sm">Registered Events</span>
+                  <span className="font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-900 px-2.5 py-0.5 rounded-md">{myRegistrationIds.length}</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Filter Panel */}
+          <FilterPanel
+            selectedPlatforms={selectedPlatforms}
+            onPlatformChange={setSelectedPlatforms}
+            deadlineFilter={deadlineFilter}
+            onDeadlineChange={setDeadlineFilter}
+            onClearAll={handleClearFilters}
+            totalCount={(activeTab === 'explore' ? unregisteredHackathons : registeredHackathons).length}
+            filteredCount={displayedHackathons.length}
+          />
         </div>
       </div>
 
