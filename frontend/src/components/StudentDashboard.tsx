@@ -150,7 +150,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         // Check if popup was blocked
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
           // Popup was blocked, show user a message
-          alert(`Please allow popups for this site to open the registration page.\n\nAlternatively, copy this link:\n${url}`);
           return;
         }
       }
@@ -160,7 +159,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
     } catch (error: any) {
       SHOW_LOGS && console.error('launch failed:', error);
-      alert('Failed to open registration link. Please check your browser settings or try again.');
     }
   };
 
