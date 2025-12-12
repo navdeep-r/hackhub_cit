@@ -9,6 +9,9 @@ import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
 import { ErrorModal } from './ErrorModal';
 
+// External Utilities
+import { canonicalURL } from '../utils/canonicalURL.ts'
+
 const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
@@ -179,7 +182,7 @@ export const FacultyDashboard: React.FC = () => {
         description: formData.description || '',
         date: formData.date,
         registrationDeadline: formData.registrationDeadline || '',
-        registrationLink: formData.registrationLink || '',
+        registrationLink: canonicalURL(formData.registrationLink) || '',
         platform: formData.platform || 'Others',
         location: formData.location || 'TBD',
         prizePool: formData.prizePool || 'TBD',

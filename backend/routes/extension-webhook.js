@@ -40,7 +40,7 @@ extension_webhook.post('/', async (req, res) => {
 
         // match exact registrationLink (or startsWith for safety)
         const hackathon = await Hackathon.findOne({
-            registrationLink: { $regex: currentUrl, $options: 'i' }
+            registrationLink: currentUrl
         });
 
         if (!hackathon) {
