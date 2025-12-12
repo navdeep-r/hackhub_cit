@@ -2,6 +2,9 @@
 import { Hackathon, Registration, StudentProfile, User } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
+const NODE_ENV = process.env.NODE_ENV || "development";
+const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 // --- Auth ---
 export const loginUser = async (credentials: any): Promise<{ user: User, token: string }> => {
@@ -66,7 +69,7 @@ export const saveHackathon = async (hackathon: Hackathon): Promise<Hackathon> =>
       throw new Error(errorData.error || 'Failed to save hackathon');
     } else {
       const errorText = await res.text();
-      console.error('Non-JSON error response:', errorText.substring(0, 200));
+      SHOW_LOGS && console.error('Non-JSON error response:', errorText.substring(0, 200));
       throw new Error('Server returned non-JSON response. Please check backend server is running and restart it if needed.');
     }
   }

@@ -3,6 +3,10 @@ import { Hackathon, Registration } from '../types';
 import { X, Calendar, MapPin, Clock, Users, Globe, Award, FileText, Eye, Tag, TrendingUp, ExternalLink, Sparkles, Timer } from 'lucide-react';
 import { getRegistrations } from '../services/api';
 
+const NODE_ENV = process.env.NODE_ENV || "development";
+const isProduction = NODE_ENV == "production";
+const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+
 interface HackathonDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -28,7 +32,7 @@ export const HackathonDetailsModal: React.FC<HackathonDetailsModalProps> = ({ is
             );
             setRegistrations(relevantRegs);
         } catch (error) {
-            console.error('Error fetching registrations:', error);
+            SHOW_LOGS && console.error('Error fetching registrations:', error);
         } finally {
             setLoading(false);
         }
