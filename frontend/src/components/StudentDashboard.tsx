@@ -267,19 +267,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       const weekFromNow = now + (7 * 24 * 60 * 60 * 1000);
       const monthFromNow = now + (30 * 24 * 60 * 60 * 1000);
 
-      filtered = filtered.filter(h => {
-        if (!h.registrationDeadline) return false;
-        const deadline = new Date(h.registrationDeadline).getTime();
+      // For 'latest', don't filter by deadline - just sort by createdAt
+      if (deadlineFilter !== 'latest') {
+        filtered = filtered.filter(h => {
+          if (!h.registrationDeadline) return false;
+          const deadline = new Date(h.registrationDeadline).getTime();
 
-        if (deadlineFilter === 'week') {
-          return deadline >= now && deadline <= weekFromNow;
-        } else if (deadlineFilter === 'month') {
-          return deadline >= now && deadline <= monthFromNow;
-        } else if (deadlineFilter === 'upcoming') {
-          return deadline > monthFromNow;
-        }
-        return true;
-      });
+          if (deadlineFilter === 'week') {
+            return deadline >= now && deadline <= weekFromNow;
+          } else if (deadlineFilter === 'month') {
+            return deadline >= now && deadline <= monthFromNow;
+          } else if (deadlineFilter === 'upcoming') {
+            return deadline > monthFromNow;
+          }
+          return true;
+        });
+      }
     }
 
     // Search filter
@@ -289,12 +292,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       (h.tags && h.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
     );
 
-    // Sort by closest upcoming deadline
-    filtered.sort((a, b) => {
-      const deadlineA = a.registrationDeadline ? new Date(a.registrationDeadline).getTime() : Infinity;
-      const deadlineB = b.registrationDeadline ? new Date(b.registrationDeadline).getTime() : Infinity;
-      return deadlineA - deadlineB; // Closest deadline first
-    });
+    // Sort logic: Latest filter sorts by creation date, others sort by deadline
+    if (deadlineFilter === 'latest') {
+      filtered.sort((a, b) => b.createdAt - a.createdAt); // Most recent first
+    } else {
+      filtered.sort((a, b) => {
+        const deadlineA = a.registrationDeadline ? new Date(a.registrationDeadline).getTime() : Infinity;
+        const deadlineB = b.registrationDeadline ? new Date(b.registrationDeadline).getTime() : Infinity;
+        return deadlineA - deadlineB; // Closest deadline first
+      });
+    }
 
     return filtered;
   };

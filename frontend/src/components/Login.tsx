@@ -81,6 +81,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onLogin(data.user);
             } else {
                 // Signup Logic - email validation now done on backend
+
+                // Validate registration number format for students
+                if (activeRole === UserRole.STUDENT) {
+                    const regNoPattern = /^24CS\d+$/;
+                    if (!regNoPattern.test(formData.registerNo)) {
+                        setError('Registration number must start with "24CS" followed by digits (e.g., 24CS001)');
+                        setShowErrorModal(true);
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+
                 const payload: any = {
                     name: formData.name,
                     email: formData.email,
@@ -433,7 +445,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                                             value={formData.registerNo}
                                                             onChange={handleChange}
                                                             className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl py-3 pl-10 pr-4 text-slate-200 placeholder-slate-600 outline-none transition-all duration-200 text-sm font-mono hover:border-slate-700"
-                                                            placeholder="21050XX"
+                                                            placeholder="24CS001"
                                                         />
                                                     </div>
                                                 </div>
@@ -501,8 +513,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             </button>
                         </div>
 
-                        {/* Google Sign-In (Simulated) */}
-                        <div className="mt-6 pt-6 border-t border-slate-700/50">
+                        {/* Google Sign-In (Simulated) - Hidden for now */}
+                        {/* <div className="mt-6 pt-6 border-t border-slate-700/50">
                             <button
                                 type="button"
                                 onClick={async () => {
@@ -539,7 +551,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 </svg>
                                 Google
                             </button>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 

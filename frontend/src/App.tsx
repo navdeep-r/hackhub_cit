@@ -113,11 +113,9 @@ const App: React.FC = () => {
             {/* Footer */}
             <footer className="border-t border-white/5 py-8 mt-auto">
               <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
-                <p>&copy; {new Date().getFullYear()} HackHub. Connecting Campus Innovators.</p>
+                <p>&copy; {new Date().getFullYear()} HackHub. CIT'S ONE STOP HACKATHON PORTAL.</p>
                 <div className="flex gap-6">
-                  <a href="#" className="hover:text-blue-400 transition-colors">Privacy</a>
-                  <a href="#" className="hover:text-blue-400 transition-colors">Terms</a>
-                  <a href="#" className="hover:text-blue-400 transition-colors">Support</a>
+                  <a href="#" className="hover:text-blue-400 transition-colors">BY:THE QuantumDevs</a>
                 </div>
               </div>
             </footer>

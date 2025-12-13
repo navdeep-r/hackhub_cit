@@ -20,6 +20,7 @@ const PLATFORMS = [
 
 const DEADLINE_OPTIONS = [
     { id: 'all', label: 'All Deadlines' },
+    { id: 'latest', label: 'Latest' },
     { id: 'week', label: 'This Week' },
     { id: 'month', label: 'This Month' },
     { id: 'upcoming', label: 'Upcoming (30+ days)' },
