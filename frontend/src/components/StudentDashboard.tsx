@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera } from 'lucide-react';
+import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera, RefreshCw } from 'lucide-react';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { FilterPanel } from './FilterPanel';
 
@@ -54,10 +54,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const [activeHackathon, setActiveHackathon] = useState<Hackathon | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [viewedHackathons, setViewedHackathons] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filter states
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
+
+  // Load viewed hackathons from localStorage on mount
+  useEffect(() => {
+    const viewed = localStorage.getItem('viewedHackathons');
+    if (viewed) {
+      setViewedHackathons(new Set(JSON.parse(viewed)));
+    }
+  }, []);
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -70,7 +80,36 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
       }
     };
     loadData();
+
+    // Poll for registration updates every 5 seconds to catch changes from Chrome extension
+    const pollInterval = setInterval(async () => {
+      try {
+        const r = await getRegistrations();
+        setRegistrations(r);
+      } catch (error) {
+        SHOW_LOGS && console.error("Failed to poll registrations", error);
+      }
+    }, 5000); // 5 seconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(pollInterval);
   }, []);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const h = await getHackathons();
+      const r = await getRegistrations();
+      setHackathons(h);
+      setRegistrations(r);
+    } catch (error) {
+      SHOW_LOGS && console.error("Failed to refresh data", error);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500); // Keep animation for at least 500ms
+    }
+  };
+
   // Countdown timer effect
   useEffect(() => {
     if (!activeHackathon?.registrationDeadline) return;
@@ -96,6 +135,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const handleViewDetails = async (h: Hackathon) => {
     await incrementImpression(h.id);
     setActiveHackathon(h);
+
+    // Mark hackathon as viewed and save to localStorage
+    if (!viewedHackathons.has(h.id)) {
+      const newViewed = new Set(viewedHackathons);
+      newViewed.add(h.id);
+      setViewedHackathons(newViewed);
+      localStorage.setItem('viewedHackathons', JSON.stringify(Array.from(newViewed)));
+      SHOW_LOGS && console.log('✅ Marked hackathon as viewed:', h.id, 'Total viewed:', newViewed.size);
+    }
+  };
+
+  // Debug function to clear viewed hackathons (for testing)
+  const clearViewedHackathons = () => {
+    setViewedHackathons(new Set());
+    localStorage.removeItem('viewedHackathons');
+    console.log('🗑️ Cleared all viewed hackathons');
   };
 
   const triggerConfetti = () => {
@@ -163,7 +218,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   };
 
   const isNew = (timestamp: number) => {
-    return (Date.now() - timestamp) < (7 * 24 * 60 * 60 * 1000);
+    const isNewHack = (Date.now() - timestamp) < (7 * 24 * 60 * 60 * 1000);
+    SHOW_LOGS && console.log('Checking if new:', timestamp, 'Result:', isNewHack, 'Days old:', Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000)));
+    return isNewHack;
   };
 
   // Filter Logic - Only include active (non-expired) hackathons
@@ -305,15 +362,33 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
             <h2 className="text-3xl font-bold text-white">Hackathon Hub</h2>
             <p className="text-slate-400 mt-1">Discover and compete in upcoming challenges</p>
           </div>
-          <div className="relative w-full sm:w-auto group">
-            <Search className="absolute left-3 top-3 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-10 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500/50 outline-none w-full sm:w-64 transition-all"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial group">
+              <Search className="absolute left-3 top-3 text-slate-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-10 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500/50 outline-none w-full sm:w-64 transition-all"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 transition-all disabled:opacity-50 flex items-center gap-2"
+              title="Refresh data"
+            >
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+            {/* Uncomment below button for testing NEW badge functionality */}
+            {/* <button
+              onClick={clearViewedHackathons}
+              className="px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-400 hover:text-red-400 hover:border-red-500/50 transition-all flex items-center gap-2"
+              title="Clear viewed hackathons (debug)"
+            >
+              Clear Viewed
+            </button> */}
           </div>
         </header>
 
@@ -356,8 +431,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
                       {h.platform}
                     </span>
-                    {isNew(h.createdAt) && !isRegistered && (
-                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && (
+                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/50 animate-pulse shadow-lg shadow-rose-500/20">
                         <Bell size={9} /> NEW
                       </span>
                     )}
@@ -659,28 +734,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                   Close
                 </button>
 
-                {!myRegistrationIds.includes(activeHackathon.id) && (
-                  <>
-                    {activeHackathon.registrationLink && (
-                      <a
-                        href={activeHackathon.registrationLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group px-6 py-3 bg-indigo-600/20 text-indigo-300 border-2 border-indigo-600/50 rounded-xl hover:bg-indigo-600/30 hover:border-indigo-500 font-semibold flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
-                      >
-                        <ExternalLink size={18} className="group-hover:rotate-12 transition-transform" />
-                        Official Page
-                      </a>
-                    )}
+                {/* Official Page button - always show if link exists */}
+                {activeHackathon.registrationLink && (
+                  <a
+                    href={activeHackathon.registrationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group px-6 py-3 bg-indigo-600/20 text-indigo-300 border-2 border-indigo-600/50 rounded-xl hover:bg-indigo-600/30 hover:border-indigo-500 font-semibold flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                  >
+                    <ExternalLink size={18} className="group-hover:rotate-12 transition-transform" />
+                    Official Page
+                  </a>
+                )}
 
-                    <button
-                      onClick={handleRegister}
-                      className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-2 border border-cyan-500/50"
-                    >
-                      <CheckCircle size={18} />
-                      Confirm Registration
-                    </button>
-                  </>
+                {/* Registration button - only show for unregistered hackathons */}
+                {!myRegistrationIds.includes(activeHackathon.id) && (
+                  <button
+                    onClick={handleRegister}
+                    className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-2 border border-cyan-500/50"
+                  >
+                    <CheckCircle size={18} />
+                    Confirm Registration
+                  </button>
                 )}
 
                 {myRegistrationIds.includes(activeHackathon.id) && (

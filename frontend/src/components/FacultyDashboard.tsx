@@ -60,6 +60,8 @@ export const FacultyDashboard: React.FC = () => {
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [formError, setFormError] = useState<string>('');
   const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const refreshData = async () => {
     try {
@@ -123,6 +125,9 @@ export const FacultyDashboard: React.FC = () => {
   };
 
   const handleSave = async () => {
+    // Prevent double-click
+    if (isSaving) return;
+
     setFormError('');
 
     // Validate required fields
@@ -175,6 +180,7 @@ export const FacultyDashboard: React.FC = () => {
       }
     }
 
+    setIsSaving(true);
     try {
       const newHackathon: Hackathon = {
         id: formData.id || Date.now().toString(),
@@ -202,6 +208,8 @@ export const FacultyDashboard: React.FC = () => {
       SHOW_LOGS && console.error('Error saving hackathon:', error);
       setFormError('Failed to save hackathon: ' + (error.message || 'Unknown error'));
       setErrorModalOpen(true);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -211,15 +219,24 @@ export const FacultyDashboard: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (hackathonToDelete) {
+    if (hackathonToDelete && !isDeleting) {
+      setIsDeleting(true);
       try {
-        await deleteHackathon(hackathonToDelete);
-        await refreshData();
+        // Close modal and clear state FIRST to prevent flash
         setDeleteModalOpen(false);
+        const idToDelete = hackathonToDelete;
         setHackathonToDelete(null);
+
+        // Then delete and refresh
+        await deleteHackathon(idToDelete);
+        await refreshData();
       } catch (error: any) {
         SHOW_LOGS && console.error('Error deleting hackathon:', error);
         alert('Failed to delete hackathon: ' + (error.message || 'Unknown error'));
+        // Reopen modal if there was an error
+        setDeleteModalOpen(true);
+      } finally {
+        setIsDeleting(false);
       }
     }
   };
@@ -706,9 +723,10 @@ export const FacultyDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-900/40 transition-all font-bold flex items-center gap-2"
+                  disabled={isSaving}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-900/40 transition-all font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                 >
-                  {formData.id ? 'Update Hackathon' : 'Create Hackathon'}
+                  {isSaving ? 'Saving...' : (formData.id ? 'Update Hackathon' : 'Create Hackathon')}
                 </button>
               </div>
             </div>

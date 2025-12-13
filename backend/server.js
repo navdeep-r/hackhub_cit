@@ -11,7 +11,7 @@ import api from "./routes/api.js";
 config();
 const app = express();
 const PORT = process.env.PORT || 5000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5174";
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hackhub';
 const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
