@@ -175,48 +175,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     fire(0.1, { spread: 120, startVelocity: 45 });
   };
 
-  const handleRegister = async () => {
-    if (!activeHackathon || !user) return;
-
-    // If already registered, do nothing
-    if (registrations.some(r =>
-      r.hackathonId === activeHackathon.id &&
-      r.studentId === user.id
-    )) {
-      return;
-    }
-
-    try {
-      // Open external link with URL validation
-      if (activeHackathon.registrationLink) {
-        // Sanitize URL - ensure it has a protocol
-        let url = activeHackathon.registrationLink.trim();
-
-        // If URL doesn't start with http:// or https://, add https://
-        if (!url.match(/^https?:\/\//i)) {
-          url = 'https://' + url;
-        }
-
-        SHOW_LOGS && console.log('Opening registration link:', url);
-
-        // Open the link in a new tab
-        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
-
-        // Check if popup was blocked
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          // Popup was blocked, show user a message
-          return;
-        }
-      }
-
-      // close modal
-      setActiveHackathon(null);
-
-    } catch (error: any) {
-      SHOW_LOGS && console.error('launch failed:', error);
-    }
-  };
-
   const isNew = (timestamp: number) => {
     const isNewHack = (Date.now() - timestamp) < (7 * 24 * 60 * 60 * 1000);
     SHOW_LOGS && console.log('Checking if new:', timestamp, 'Result:', isNewHack, 'Days old:', Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000)));
@@ -755,14 +713,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                 )}
 
                 {/* Registration button - only show for unregistered hackathons */}
-                {!myRegistrationIds.includes(activeHackathon.id) && (
-                  <button
-                    onClick={handleRegister}
+                {!myRegistrationIds.includes(activeHackathon.id) && activeHackathon.registrationLink && (
+                  <a
+                    href={activeHackathon.registrationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-2 border border-cyan-500/50"
                   >
                     <CheckCircle size={18} />
                     Confirm Registration
-                  </button>
+                  </a>
                 )}
 
                 {myRegistrationIds.includes(activeHackathon.id) && (
