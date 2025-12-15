@@ -268,6 +268,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     activeTab === 'explore' ? unregisteredHackathons : registeredHackathons
   );
 
+
   // Handler functions for filters
   const handleClearFilters = () => {
     setSelectedPlatforms([]);
@@ -276,9 +277,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
-      {/* Sidebar Profile & Filters - Made sticky as a unit */}
+      {/* Sidebar Profile & Filters - Made sticky with independent scroll */}
       <div className="lg:col-span-3">
-        <div className="sticky top-24 space-y-6">
+        <div className="sticky top-24 space-y-6 max-h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
           {/* Profile Card */}
           <div className="glass-panel p-6 rounded-2xl animate-slide-up">
             <div className="relative mb-6">
@@ -397,8 +398,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                       {h.platform}
                     </span>
                     {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && (
-                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/50 animate-pulse shadow-lg shadow-rose-500/20">
-                        <Bell size={9} /> NEW
+                      <span className="new-badge relative flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white border-2 border-yellow-400/70 backdrop-blur-sm overflow-hidden group/badge">
+                        {/* Animated gradient background */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-yellow-500/80 via-amber-400/80 to-yellow-500/80 opacity-90"></span>
+
+                        {/* Shimmer overlay */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover/badge:opacity-100 transition-opacity duration-500"></span>
+
+                        {/* Content */}
+                        <Bell size={10} className="relative z-10 drop-shadow-sm animate-pulse" />
+                        <span className="relative z-10 tracking-wider drop-shadow-sm">NEW</span>
+
+                        {/* Sparkle effect */}
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-200 rounded-full opacity-70 blur-[1px] animate-ping"></span>
                       </span>
                     )}
                     {isRegistered && (

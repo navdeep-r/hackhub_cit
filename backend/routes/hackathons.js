@@ -17,21 +17,28 @@ hackathons.get('/', async (req, res) => {
         const hackathons = await Hackathon.find().sort({ createdAt: -1 });
 
         // Transform hackathons to match frontend expected format
-        const transformedHackathons = hackathons.map(hackathon => ({
-            id: hackathon._id.toString(),
-            title: hackathon.title,
-            description: hackathon.description,
-            date: hackathon.date,
-            registrationDeadline: hackathon.registrationDeadline,
-            registrationLink: hackathon.registrationLink,
-            platform: hackathon.platform,
-            location: hackathon.location,
-            prizePool: hackathon.prizePool,
-            categories: hackathon.categories || [],
-            tags: hackathon.tags || [],
-            impressions: hackathon.impressions || 0,
-            createdAt: hackathon.createdAt
-        }));
+        const transformedHackathons = hackathons.map(hackathon => {
+            const createdAtTimestamp = hackathon.createdAt ? new Date(hackathon.createdAt).getTime() : Date.now();
+            const daysOld = Math.floor((Date.now() - createdAtTimestamp) / (24 * 60 * 60 * 1000));
+
+            SHOW_LOGS && console.log(`📅 Hack: "${hackathon.title.substring(0, 30)}" | createdAt: ${createdAtTimestamp} | Days old: ${daysOld} | Should show NEW: ${daysOld < 7}`);
+
+            return {
+                id: hackathon._id.toString(),
+                title: hackathon.title,
+                description: hackathon.description,
+                date: hackathon.date,
+                registrationDeadline: hackathon.registrationDeadline,
+                registrationLink: hackathon.registrationLink,
+                platform: hackathon.platform,
+                location: hackathon.location,
+                prizePool: hackathon.prizePool,
+                categories: hackathon.categories || [],
+                tags: hackathon.tags || [],
+                impressions: hackathon.impressions || 0,
+                createdAt: createdAtTimestamp
+            };
+        });
 
         res.json(transformedHackathons);
     } catch (err) {
@@ -74,7 +81,8 @@ hackathons.post('/', async (req, res) => {
         // Add the MongoDB _id as id for frontend compatibility
         const hackathonResponse = {
             ...hackathonData,
-            id: savedHackathon._id.toString()
+            id: savedHackathon._id.toString(),
+            createdAt: savedHackathon.createdAt ? new Date(savedHackathon.createdAt).getTime() : Date.now()
         };
 
         res.status(201).json(hackathonResponse);
@@ -121,7 +129,8 @@ hackathons.put('/:id', async (req, res) => {
         // Add the MongoDB _id as id for frontend compatibility
         const hackathonResponse = {
             ...updatedHackathon.toObject(),
-            id: updatedHackathon._id.toString()
+            id: updatedHackathon._id.toString(),
+            createdAt: updatedHackathon.createdAt ? new Date(updatedHackathon.createdAt).getTime() : Date.now()
         };
 
         res.json(hackathonResponse);

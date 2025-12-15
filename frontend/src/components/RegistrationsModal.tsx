@@ -186,33 +186,20 @@ export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
                         </div>
 
 
-
                         {/* Section Filter */}
-                        <div className="flex gap-2">
-                            <span className="text-sm font-medium text-slate-400 my-auto">Section:</span>
-                            {sections.slice(0, 6).map(section => (
-                                <button
-                                    key={section}
-                                    onClick={() => setSectionFilter(section)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${sectionFilter === section
-                                        ? 'bg-cyan-600 text-white shadow-md'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                        }`}
-                                >
-                                    {section}
-                                </button>
-                            ))}
-                            {sections.length > 6 && (
-                                <select
-                                    value={sectionFilter}
-                                    onChange={(e) => setSectionFilter(e.target.value)}
-                                    className="px-3 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-200 border-none outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-slate-700 transition-colors"
-                                >
-                                    {sections.map(section => (
-                                        <option key={section} value={section} className="bg-slate-900">{section}</option>
-                                    ))}
-                                </select>
-                            )}
+                        <div className="flex gap-3 items-center">
+                            <span className="text-sm font-medium text-slate-400">Section:</span>
+                            <select
+                                value={sectionFilter}
+                                onChange={(e) => setSectionFilter(e.target.value)}
+                                className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-200 border-none outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-slate-700 transition-colors min-w-[120px] shadow-sm"
+                            >
+                                {sections.map(section => (
+                                    <option key={section} value={section} className="bg-slate-900">
+                                        {section}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="ml-auto flex gap-2">
