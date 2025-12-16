@@ -282,3 +282,108 @@ code {
   scrollbar-width: thin;
   scrollbar-color: #334155 rgba(15, 23, 42, 0.3);
 }
+
+/* ===== NOTIFICATION BUTTON ANIMATIONS ===== */
+
+/* Bell Icon Pulse Animation */
+@keyframes notificationPulse {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: scale(1.1) rotate(-15deg);
+  }
+
+  50% {
+    transform: scale(1.1) rotate(15deg);
+  }
+
+  75% {
+    transform: scale(1.1) rotate(-10deg);
+  }
+}
+
+/* Badge Bounce Animation */
+@keyframes notificationBounce {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* Button Glow Animation */
+@keyframes notificationGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3),
+      0 0 20px rgba(251, 191, 36, 0.2),
+      inset 0 0 20px rgba(251, 191, 36, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5),
+      0 0 30px rgba(251, 191, 36, 0.3),
+      inset 0 0 30px rgba(251, 191, 36, 0.15);
+  }
+}
+
+/* Dropdown Slide Animation */
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Apply notification button animations */
+.animate-notificationPulse {
+  animation: notificationPulse 2s ease-in-out infinite;
+}
+
+.animate-notificationBounce {
+  animation: notificationBounce 1s ease-in-out infinite;
+}
+
+.notification-btn-glow {
+  animation: notificationGlow 2.5s ease-in-out infinite;
+}
+
+.animate-dropdownSlide {
+  animation: dropdownSlide 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Keep fadeIn for notification items */
+.animate-fadeIn {
+  animation: fade-in 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+/* Glass effect for notification banner */
+.glass-notification {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Notification item hover effect */
+.notification-item {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notification-item:hover {
+  transform: translateX(4px);
+}

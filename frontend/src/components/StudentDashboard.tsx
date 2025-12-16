@@ -45,9 +45,10 @@ const getAvatarGradient = (avatarId?: string) => {
 
 interface StudentDashboardProps {
   user: User;
+  onNotificationsChange?: (hackathons: Hackathon[], handlers: { onDismiss: (id: string) => void, onDismissAll: () => void }) => void;
 }
 
-export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
+export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNotificationsChange }) => {
   const [activeTab, setActiveTab] = useState<'explore' | 'my-events'>('explore');
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -56,16 +57,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [viewedHackathons, setViewedHackathons] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
 
   // Filter states
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
 
-  // Load viewed hackathons from localStorage on mount
+  // Load viewed hackathons and dismissed notifications from localStorage on mount
   useEffect(() => {
     const viewed = localStorage.getItem('viewedHackathons');
     if (viewed) {
       setViewedHackathons(new Set(JSON.parse(viewed)));
+    }
+
+    const dismissed = localStorage.getItem('dismissedNotifications');
+    if (dismissed) {
+      setDismissedNotifications(new Set(JSON.parse(dismissed)));
     }
   }, []);
   useEffect(() => {
@@ -274,6 +281,42 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     setSelectedPlatforms([]);
     setDeadlineFilter('all');
   };
+
+  // Notification handlers with localStorage persistence
+  const handleDismissNotification = (hackathonId: string) => {
+    setDismissedNotifications(prev => {
+      const updated = new Set([...prev, hackathonId]);
+      localStorage.setItem('dismissedNotifications', JSON.stringify(Array.from(updated)));
+      return updated;
+    });
+  };
+
+  const handleDismissAllNotifications = () => {
+    const allNotificationIds = approachingDeadlineHacks.map(h => h.id);
+    const updated = new Set([...dismissedNotifications, ...allNotificationIds]);
+    localStorage.setItem('dismissedNotifications', JSON.stringify(Array.from(updated)));
+    setDismissedNotifications(updated);
+  };
+
+  // Filter registered hackathons with approaching deadlines (≤2 days)
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+  const approachingDeadlineHacks = registeredHackathons.filter(h => {
+    if (!h.registrationDeadline) return false;
+    const now = Date.now();
+    const deadlineTime = new Date(h.registrationDeadline).getTime();
+    const timeDiff = deadlineTime - now;
+    return timeDiff > 0 && timeDiff <= TWO_DAYS_MS && !dismissedNotifications.has(h.id);
+  });
+
+  // Notify parent component about notifications
+  useEffect(() => {
+    if (onNotificationsChange) {
+      onNotificationsChange(approachingDeadlineHacks, {
+        onDismiss: handleDismissNotification,
+        onDismissAll: handleDismissAllNotifications
+      });
+    }
+  }, [approachingDeadlineHacks.length, onNotificationsChange]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">

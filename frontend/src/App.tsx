@@ -8,6 +8,8 @@ import { FacultyDashboard } from './components/FacultyDashboard';
 import { StudentDashboard } from './components/StudentDashboard';
 import { Login } from './components/Login';
 import { ProfileModal } from './components/ProfileModal';
+import { NotificationButton } from './components/NotificationButton';
+import { Hackathon } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -17,6 +19,8 @@ const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [notificationHackathons, setNotificationHackathons] = useState<Hackathon[]>([]);
+  const [notificationHandlers, setNotificationHandlers] = useState<{ onDismiss: (id: string) => void, onDismissAll: () => void } | null>(null);
 
   // Restore user on page reload
   useEffect(() => {
@@ -47,6 +51,11 @@ const App: React.FC = () => {
       credentials: 'include'
     });
     setUser(null);
+  };
+
+  const handleNotificationsChange = (hackathons: Hackathon[], handlers: { onDismiss: (id: string) => void, onDismissAll: () => void }) => {
+    setNotificationHackathons(hackathons);
+    setNotificationHandlers(handlers);
   };
 
   return (
@@ -93,6 +102,15 @@ const App: React.FC = () => {
                       </span>
                     </div>
 
+                    {/* Notification Button - Only for Students */}
+                    {user.role === UserRole.STUDENT && notificationHandlers && (
+                      <NotificationButton
+                        hackathons={notificationHackathons}
+                        onDismiss={notificationHandlers.onDismiss}
+                        onDismissAll={notificationHandlers.onDismissAll}
+                      />
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
@@ -107,7 +125,11 @@ const App: React.FC = () => {
 
             {/* Main Content Area */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-              {user.role === UserRole.FACULTY ? <FacultyDashboard /> : <StudentDashboard user={user} />}
+              {user.role === UserRole.FACULTY ? (
+                <FacultyDashboard />
+              ) : (
+                <StudentDashboard user={user} onNotificationsChange={handleNotificationsChange} />
+              )}
             </main>
 
             {/* Footer */}

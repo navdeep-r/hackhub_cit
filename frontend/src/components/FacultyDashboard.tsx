@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft, Info } from 'lucide-react';
 import { Hackathon, Registration, AnalyticsData } from '../types';
 import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, generateHackathonDescription, analyzeEngagementTrends, getAllStudents } from '../services/api';
@@ -8,13 +8,6 @@ import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
 import { ErrorModal } from './ErrorModal';
-
-// External Utilities
-import { canonicalURL } from '../utils/canonicalURL.ts'
-
-const NODE_ENV = process.env.NODE_ENV || "development";
-const isProduction = NODE_ENV == "production";
-const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {
@@ -25,7 +18,7 @@ const truncateTextByWords = (text: string, maxWords: number): string => {
 };
 
 const CATEGORY_OPTIONS = ['AI/ML/DS', 'WEB DEV', 'BLOCKCHAIN', 'IOT', 'CYBERSECURITY', 'MOBILE DEV', 'OTHER'];
-const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Government', 'Others'];
+const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Devfolio', 'Hack2Skill', 'Others'];
 
 export const FacultyDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'analytics'>('list');
@@ -46,9 +39,6 @@ export const FacultyDashboard: React.FC = () => {
     prizePool: '',
     categories: []
   });
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [hackathonToDelete, setHackathonToDelete] = useState<string | null>(null);
 
@@ -60,8 +50,7 @@ export const FacultyDashboard: React.FC = () => {
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [formError, setFormError] = useState<string>('');
   const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedAnalyticsHackId, setSelectedAnalyticsHackId] = useState<string>('');
 
   const refreshData = async () => {
     try {
@@ -73,7 +62,7 @@ export const FacultyDashboard: React.FC = () => {
         const rData = await getRegistrations();
         setRegistrations(rData);
       } catch (regError) {
-        SHOW_LOGS && console.error('Error fetching registrations (continuing anyway):', regError);
+        console.error('Error fetching registrations (continuing anyway):', regError);
         // Set empty array for registrations to prevent undefined errors
         setRegistrations([]);
       }
@@ -83,10 +72,10 @@ export const FacultyDashboard: React.FC = () => {
         const students = await getAllStudents();
         setAllStudents(students);
       } catch (err) {
-        SHOW_LOGS && console.warn('Failed to fetch students:', err);
+        console.warn('Failed to fetch students:', err);
       }
     } catch (error) {
-      SHOW_LOGS && console.error('Error refreshing data:', error);
+      console.error('Error refreshing data:', error);
     }
   };
 
@@ -125,9 +114,6 @@ export const FacultyDashboard: React.FC = () => {
   };
 
   const handleSave = async () => {
-    // Prevent double-click
-    if (isSaving) return;
-
     setFormError('');
 
     // Validate required fields
@@ -180,7 +166,6 @@ export const FacultyDashboard: React.FC = () => {
       }
     }
 
-    setIsSaving(true);
     try {
       const newHackathon: Hackathon = {
         id: formData.id || Date.now().toString(),
@@ -188,7 +173,7 @@ export const FacultyDashboard: React.FC = () => {
         description: formData.description || '',
         date: formData.date,
         registrationDeadline: formData.registrationDeadline || '',
-        registrationLink: canonicalURL(formData.registrationLink) || '',
+        registrationLink: formData.registrationLink || '',
         platform: formData.platform || 'Others',
         location: formData.location || 'TBD',
         prizePool: formData.prizePool || 'TBD',
@@ -205,11 +190,9 @@ export const FacultyDashboard: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       await refreshData();
     } catch (error: any) {
-      SHOW_LOGS && console.error('Error saving hackathon:', error);
+      console.error('Error saving hackathon:', error);
       setFormError('Failed to save hackathon: ' + (error.message || 'Unknown error'));
       setErrorModalOpen(true);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -219,24 +202,15 @@ export const FacultyDashboard: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (hackathonToDelete && !isDeleting) {
-      setIsDeleting(true);
+    if (hackathonToDelete) {
       try {
-        // Close modal and clear state FIRST to prevent flash
-        setDeleteModalOpen(false);
-        const idToDelete = hackathonToDelete;
-        setHackathonToDelete(null);
-
-        // Then delete and refresh
-        await deleteHackathon(idToDelete);
+        await deleteHackathon(hackathonToDelete);
         await refreshData();
+        setDeleteModalOpen(false);
+        setHackathonToDelete(null);
       } catch (error: any) {
-        SHOW_LOGS && console.error('Error deleting hackathon:', error);
+        console.error('Error deleting hackathon:', error);
         alert('Failed to delete hackathon: ' + (error.message || 'Unknown error'));
-        // Reopen modal if there was an error
-        setDeleteModalOpen(true);
-      } finally {
-        setIsDeleting(false);
       }
     }
   };
@@ -256,31 +230,6 @@ export const FacultyDashboard: React.FC = () => {
     } else {
       setFormData({ ...formData, categories: [...CATEGORY_OPTIONS] });
     }
-  };
-
-  const handleGenerateDescription = async () => {
-    if (!formData.title) return;
-    setIsGenerating(true);
-    try {
-      const desc = await generateHackathonDescription(formData.title, aiPrompt || 'Innovation, Coding, Fun');
-      setFormData(prev => ({ ...prev, description: desc }));
-    } catch (e) {
-      SHOW_LOGS && console.error("AI Error", e);
-    }
-    setIsGenerating(false);
-  };
-
-  const handleAnalyzeTrends = async () => {
-    setIsAnalyzing(true);
-    const data = prepareAnalytics();
-    const jsonStr = JSON.stringify(data.map(d => ({ title: d.hackathonTitle, ratio: d.registrations / (d.impressions || 1) })));
-    try {
-      const insight = await analyzeEngagementTrends(jsonStr);
-      setAiAnalysis(insight);
-    } catch (e) {
-      SHOW_LOGS && console.error("AI Error", e);
-    }
-    setIsAnalyzing(false);
   };
 
   const prepareAnalytics = (): AnalyticsData[] => {
@@ -345,84 +294,222 @@ export const FacultyDashboard: React.FC = () => {
       </div>
 
       {/* 1. Analytics Tab */}
-      {activeTab === 'analytics' && (
-        <section className="glass-panel p-6 rounded-2xl animate-fade-in">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-100">
-              <TrendingUp size={20} className="text-indigo-400" /> Engagement Analytics
-            </h3>
+      {activeTab === 'analytics' && (() => {
+        // Prepare section-wise data for selected hackathon
+        const prepareSectionData = () => {
+          if (!selectedAnalyticsHackId) return [];
 
-          </div>
+          const hackRegs = registrations.filter(r => String(r.hackathonId) === selectedAnalyticsHackId);
+          const sectionCounts: Record<string, number> = {};
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Volume Chart */}
-            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-              <h4 className="text-slate-400 text-sm font-medium mb-6 text-center uppercase tracking-wider">Engagement Volume</h4>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareAnalytics()}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="hackathonTitle" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
-                      itemStyle={{ color: '#f8fafc' }}
-                      cursor={{ fill: '#334155', opacity: 0.4 }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                    <Bar dataKey="impressions" fill="#6366f1" name="Impressions" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="registrations" fill="#22d3ee" name="Registrations" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+          hackRegs.forEach(r => {
+            const section = r.section || 'Unknown';
+            sectionCounts[section] = (sectionCounts[section] || 0) + 1;
+          });
+
+          // Convert to array and sort by count descending
+          const data = Object.entries(sectionCounts)
+            .map(([section, count]) => ({ section, registrations: count }))
+            .sort((a, b) => b.registrations - a.registrations);
+
+          return data;
+        };
+
+        const sectionData = prepareSectionData();
+        const topSection = sectionData.length > 0 ? sectionData[0].section : null;
+        const selectedHackTitle = hackathons.find(h => h.id === selectedAnalyticsHackId)?.title || '';
+
+        return (
+          <section className="glass-panel p-6 rounded-2xl animate-fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-100">
+                <TrendingUp size={20} className="text-indigo-400" /> Engagement Analytics
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Volume Chart */}
+              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+                <h4 className="text-slate-400 text-sm font-medium mb-6 text-center uppercase tracking-wider">Engagement Volume</h4>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={prepareAnalytics()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                      <XAxis dataKey="hackathonTitle" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
+                        itemStyle={{ color: '#f8fafc' }}
+                        cursor={{ fill: '#334155', opacity: 0.4 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                      <Bar dataKey="impressions" fill="#6366f1" name="Impressions" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="registrations" fill="#22d3ee" name="Registrations" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Success Rate Chart */}
+              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+                <h4 className="text-slate-400 text-sm font-medium mb-6 text-center uppercase tracking-wider">Success Rate Over Time</h4>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={prepareTrendData()}>
+                      <defs>
+                        <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                      <XAxis dataKey="shortDate" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} unit="%" />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
+                        itemStyle={{ color: '#34d399' }}
+                        cursor={{ stroke: '#334155' }}
+                        formatter={(value: number) => [`${value}%`, 'Conversion Rate']}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                      <Area
+                        type="monotone"
+                        dataKey="rate"
+                        name="Success Rate (%)"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorRate)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Success Rate Chart */}
-            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-              <h4 className="text-slate-400 text-sm font-medium mb-6 text-center uppercase tracking-wider">Success Rate Over Time</h4>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={prepareTrendData()}>
-                    <defs>
-                      <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="shortDate" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', color: '#f8fafc', fontSize: '12px' }}
-                      itemStyle={{ color: '#34d399' }}
-                      cursor={{ stroke: '#334155' }}
-                      formatter={(value: number) => [`${value}%`, 'Conversion Rate']}
-                      labelFormatter={(label) => `Date: ${label}`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                    <Area
-                      type="monotone"
-                      dataKey="rate"
-                      name="Success Rate (%)"
-                      stroke="#10b981"
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorRate)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+            {/* Section-wise Performance Chart */}
+            <div className="mt-8 bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h4 className="text-slate-400 text-sm font-medium uppercase tracking-wider">
+                  Section-wise Registrations
+                </h4>
 
-          {aiAnalysis && (
-            <div className="mt-6 p-4 bg-indigo-950/40 text-indigo-200 rounded-xl text-sm border border-indigo-500/30 flex gap-3 items-start animate-fade-in">
-              <Sparkles size={18} className="mt-0.5 flex-shrink-0 text-indigo-400" />
-              <p>{aiAnalysis}</p>
+                {/* Sleek Hackathon Dropdown */}
+                <div className="relative w-full sm:w-72">
+                  <select
+                    value={selectedAnalyticsHackId}
+                    onChange={(e) => setSelectedAnalyticsHackId(e.target.value)}
+                    className="w-full appearance-none bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer hover:border-slate-600"
+                  >
+                    <option value="" className="bg-slate-900">Select a hackathon...</option>
+                    {hackathons.map(h => (
+                      <option key={h.id} value={h.id} className="bg-slate-900">
+                        {h.title}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {!selectedAnalyticsHackId ? (
+                <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+                  <BarChart3 size={48} className="mb-4 opacity-30" />
+                  <p className="text-center">Select a hackathon from the dropdown<br />to view section-wise performance</p>
+                </div>
+              ) : sectionData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+                  <Users size={48} className="mb-4 opacity-30" />
+                  <p className="text-center">No registrations found for<br /><span className="text-indigo-400 font-medium">{selectedHackTitle}</span></p>
+                </div>
+              ) : (
+                <>
+                  {/* Top Performer Badge */}
+                  {topSection && (
+                    <div className="mb-6 flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-900/30 to-transparent border border-emerald-800/40 rounded-xl animate-fade-in">
+                      <div className="p-2 bg-emerald-500/20 rounded-lg">
+                        <Sparkles size={18} className="text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-emerald-400 text-xs font-medium uppercase tracking-wider">Top Performing Section</p>
+                        <p className="text-white font-bold text-lg">Section {topSection} <span className="text-slate-400 text-sm font-normal">— {sectionData[0].registrations} registrations</span></p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bar Chart */}
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={sectionData}
+                        layout="vertical"
+                        margin={{ top: 0, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={false} />
+                        <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis
+                          type="category"
+                          dataKey="section"
+                          stroke="#94a3b8"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          width={60}
+                          tickFormatter={(value) => `Sec ${value}`}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            borderRadius: '12px',
+                            border: '1px solid #334155',
+                            color: '#f8fafc',
+                            fontSize: '12px',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                          }}
+                          formatter={(value: number) => [`${value} students`, 'Registrations']}
+                          labelFormatter={(label) => `Section ${label}`}
+                          cursor={{ fill: '#334155', opacity: 0.3 }}
+                        />
+                        <Bar
+                          dataKey="registrations"
+                          radius={[0, 6, 6, 0]}
+                          animationDuration={600}
+                          animationEasing="ease-out"
+                        >
+                          {sectionData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.section === topSection ? '#10b981' : '#6366f1'}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-800">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="w-3 h-3 rounded bg-emerald-500"></div>
+                      <span>Top Section</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="w-3 h-3 rounded bg-indigo-500"></div>
+                      <span>Other Sections</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          )}
-        </section>
-      )}
+
+          </section>
+        );
+      })()}
 
       {/* 2. List View Tab */}
       {activeTab === 'list' && (
@@ -630,24 +717,7 @@ export const FacultyDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Description with AI */}
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2 flex justify-between items-center">
-                  Description
 
-                </label>
-
-                {/* AI Assistant Panel */}
-
-
-                <textarea
-                  rows={6}
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm leading-relaxed resize-none"
-                  value={formData.description || ''}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter hackathon details..."
-                />
-              </div>
 
               {/* Categories */}
               <div>
@@ -723,10 +793,9 @@ export const FacultyDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-900/40 transition-all font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-900/40 transition-all font-bold flex items-center gap-2"
                 >
-                  {isSaving ? 'Saving...' : (formData.id ? 'Update Hackathon' : 'Create Hackathon')}
+                  {formData.id ? 'Update Hackathon' : 'Create Hackathon'}
                 </button>
               </div>
             </div>
