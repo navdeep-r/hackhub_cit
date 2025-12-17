@@ -9,6 +9,9 @@ import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
 import { ErrorModal } from './ErrorModal';
 
+// External Utilities
+import { canonicalURL } from '../utils/canonicalURL.ts'
+
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {
   if (!text || typeof text !== 'string') return 'No description provided.';
@@ -169,7 +172,7 @@ export const FacultyDashboard: React.FC = () => {
         description: formData.description || '',
         date: formData.date,
         registrationDeadline: formData.registrationDeadline || '',
-        registrationLink: formData.registrationLink || '',
+        registrationLink: canonicalURL(formData.registrationLink) || '',
         platform: formData.platform || 'Others',
         location: formData.location || 'TBD',
         prizePool: formData.prizePool || 'TBD',
