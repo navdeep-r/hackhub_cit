@@ -24,10 +24,6 @@ export const FacultyDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'analytics'>('list');
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
   const [formData, setFormData] = useState<Partial<Hackathon>>({
     title: '',
     description: '',
