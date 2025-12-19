@@ -179,3 +179,17 @@ export async function googleLogin(data: any) {
 
   return res.json();
 }
+
+export async function googleSignup(data: any) {
+  const res = await fetch(`${API_BASE}/auth/google/signup`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const json = await res.json();
+  return json;
+}

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, User } from '../types';
 import { Shield, GraduationCap, ArrowRight, Lock, Mail, User as UserIcon, AlertCircle, Hash, Key, LayoutGrid, Eye, EyeOff } from 'lucide-react';
-import { loginUser, signupUser, googleLogin } from '../services/api';
+import { loginUser, signupUser, googleLogin, googleSignup } from '../services/api';
 import { ErrorModal } from './ErrorModal';
 
 declare global {
@@ -85,29 +85,80 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         window.google.accounts.id.prompt();
     };
 
+    const handleGoogleSignup = async () => {
+        if (isLoading) return;
+
+        if (!window.google) {
+            setError("Google SDK not loaded");
+            setShowErrorModal(true);
+            return;
+        }
+
+        window.google.accounts.id.prompt();
+    };
+
     const handleGoogleCredential = async (credential: string) => {
         try {
             setIsLoading(true);
 
-            const res = await googleLogin({
-                idToken: credential,
-            });
+            if (mode === 'LOGIN') {
+                const res = await googleLogin({ idToken: credential });
 
-            if (!res.success) {
-                setError(res.error || "Google login failed");
-                setShowErrorModal(true);
+                if (!res.success) {
+                    setError(res.error || "Google login failed");
+                    setShowErrorModal(true);
+                    return;
+                }
+
+                onLogin(res.user);
                 return;
             }
 
-            onLogin(res.user);
+            // ============= SIGNUP WITH GOOGLE ==============
+            if (mode === 'SIGNUP') {
+
+                // Ensure required fields present
+                if (!formData.password || !formData.name) {
+                    setError("Fill required signup fields first");
+                    setShowErrorModal(true);
+                    return;
+                }
+
+                const payload: any = {
+                    idToken: credential,
+                    password: formData.password,
+                    role: activeRole,
+                };
+
+                if (activeRole === UserRole.STUDENT) {
+                    payload.department = formData.department;
+                    payload.year = formData.year;
+                    payload.section = formData.section;
+                    payload.registerNo = formData.registerNo;
+                }
+
+                if (activeRole === UserRole.FACULTY) {
+                    payload.secretCode = formData.secretCode;
+                }
+
+                const res = await googleSignup(payload);
+
+                if (!res.success) {
+                    setError(res.error || "Google signup failed");
+                    setShowErrorModal(true);
+                    return;
+                }
+
+                onLogin(res.user);
+            }
+
         } catch (err: any) {
-            setError(err.message || "Google login failed");
+            setError(err.message);
             setShowErrorModal(true);
         } finally {
             setIsLoading(false);
         }
     };
-
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,52 +166,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError(null);
 
         try {
-            if (mode === 'LOGIN') {
-                const data = await loginUser({
-                    email: formData.email,
-                    password: formData.password
-                });
+            if (mode === 'SIGNUP') return;
+            const data = await loginUser({
+                email: formData.email,
+                password: formData.password
+            });
 
-                localStorage.setItem("auth_token", data.token);
-                onLogin(data.user);
-            } else {
-                // Signup Logic - email validation now done on backend
-
-                // Validate registration number format for students
-                if (activeRole === UserRole.STUDENT) {
-                    const regNoPattern = /^24CS\d+$/;
-                    if (!regNoPattern.test(formData.registerNo)) {
-                        setError('Registration number must start with "24CS" followed by digits (e.g., 24CS001)');
-                        setShowErrorModal(true);
-                        setIsLoading(false);
-                        return;
-                    }
-                }
-
-                const payload: any = {
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
-                    role: activeRole
-                };
-
-                // Add student-specific fields only for STUDENT role
-                if (activeRole === UserRole.STUDENT) {
-                    payload.department = formData.department;
-                    payload.year = formData.year;
-                    payload.registerNo = formData.registerNo;
-                    payload.section = formData.section;
-                }
-
-                // Add faculty-specific fields only for FACULTY role
-                if (activeRole === UserRole.FACULTY) {
-                    payload.secretCode = formData.secretCode;
-                }
-
-                const data = await signupUser(payload);
-                localStorage.setItem("auth_token", data.token);
-                onLogin(data.user);
-            }
+            localStorage.setItem("auth_token", data.token);
+            onLogin(data.user);
         } catch (err: any) {
             setError(err.message || 'Authentication failed');
             setShowErrorModal(true);
@@ -172,6 +185,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const toggleMode = () => {
         setMode(prev => prev === 'LOGIN' ? 'SIGNUP' : 'LOGIN');
         setError(null);
+        setFormData({ ...formData, email: "" })
         setShowErrorModal(false);
         if (mode === 'SIGNUP') {
             setActiveRole(UserRole.STUDENT); // Reset to student when switching to login
@@ -180,7 +194,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     useEffect(() => {
         if (!window.google) return;
-        if (mode !== 'LOGIN') return;
         if (googleInitialized.current) return;
 
         window.google.accounts.id.initialize({
@@ -380,7 +393,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form
+                            onSubmit={handleSubmit}
+                            onKeyDown={(e) => {
+                                if (mode === 'SIGNUP' && e.key === 'Enter') e.preventDefault();
+                            }}
+                            className="space-y-4"
+                        >
                             {mode === 'SIGNUP' && (
                                 <div className="space-y-1 animate-slide-up">
                                     <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wide">Full Name</label>
@@ -406,17 +425,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                     <input
                                         name="email"
                                         type="email"
-                                        required
+                                        disabled={mode === 'SIGNUP'}
+                                        required={mode !== 'SIGNUP'}
                                         value={formData.email}
                                         onChange={handleChange}
                                         className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl py-3 pl-10 pr-4 text-slate-200 placeholder-slate-600 outline-none transition-all duration-200 text-sm hover:border-slate-700"
-                                        placeholder="you@citchennai.net"
+                                        placeholder={mode === 'SIGNUP' ? "Email will be filled by Google" : "you@citchennai.net"}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1 animate-slide-up" style={{ animationDelay: '100ms' }}>
-                                <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wide">Password</label>
+                                <label
+                                    className="
+                                        flex 
+                                        justify-between 
+                                        items-center 
+                                        w-full 
+                                        text-xs font-bold
+                                        text-slate-400 
+                                        ml-1 
+                                        uppercase 
+                                        tracking-wide
+                                    "
+                                >
+                                    <span>Password</span>
+
+                                    {(mode === 'SIGNUP' || formData.email) && !formData.password && (
+                                        <span className="text-[10px] text-red-400 flex items-center gap-1 font-normal">
+                                            <AlertCircle size={10} /> Required
+                                        </span>
+                                    )}
+                                </label>
                                 <div className="relative group">
                                     <Lock className="absolute left-3 top-3 text-slate-500 group-focus-within:text-white transition-colors" size={18} />
                                     <input
@@ -475,7 +515,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '175ms' }}>
+                                            {/* <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '175ms' }}> */}
+                                            <div
+                                                className="grid grid-cols-2 gap-4 items-end animate-slide-up"
+                                                style={{ animationDelay: '175ms' }}
+                                            >
+
                                                 <div className="space-y-1">
                                                     <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wide">Section</label>
                                                     <div className="relative">
@@ -493,7 +538,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                                 <div className="space-y-1 animate-slide-up" style={{ animationDelay: '200ms' }}>
                                                     <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wide flex justify-between">
                                                         Register No.
-                                                        <span className="text-[10px] text-orange-400 flex items-center gap-1 lowercase font-normal"><AlertCircle size={10} /> permanent</span>
+                                                        {!formData.registerNo ?
+
+                                                            <span className="text-[10px] text-red-400 flex items-center gap-1 font-normal"><AlertCircle size={10} /> Required</span>
+                                                            :
+                                                            <span className="text-[10px] text-orange-400 flex items-center gap-1 font-normal"><AlertCircle size={10} /> permanent</span>
+                                                        }
                                                     </label>
                                                     <div className="relative group">
                                                         <Hash className="absolute left-3 top-3 text-slate-500 group-focus-within:text-white transition-colors" size={18} />
@@ -537,7 +587,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 </>
                             )}
 
-                            <button
+                            {mode === 'LOGIN' && <button
                                 type="submit"
                                 disabled={isLoading}
                                 className={`w-full py-3.5 mt-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${activeRole === UserRole.STUDENT
@@ -552,10 +602,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                     </div>
                                 ) : (
                                     <>
-                                        {mode === 'LOGIN' ? 'Sign In to Dashboard' : 'Create Account'} <ArrowRight size={18} />
+                                        Sign In to Dashboard <ArrowRight size={18} />
                                     </>
                                 )}
-                            </button>
+                            </button>}
                         </form>
 
                         {/* Explicit Bottom Toggle Link */}
@@ -573,19 +623,69 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         </div>
 
                         {mode === 'LOGIN' && (
+                            <div>
+
+                                <button
+                                    onClick={handleGoogleLogin}
+                                    disabled={isLoading}
+                                    className="
+                                        w-full mt-3
+                                        flex items-center justify-center gap-3
+                                        rounded-xl px-4 py-3
+                                        border border-slate-700
+                                        bg-slate-900 hover:bg-slate-800
+                                        text-slate-200 text-sm font-semibold
+                                        transition-colors
+                                        disabled:opacity-60 disabled:cursor-not-allowed
+                                    "
+                                >
+                                    {/* Google Icon */}
+                                    <span className="flex items-center">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                                            <g clipPath="url(#clip0)">
+                                                <path d="M8 3.16667C9.18 3.16667 10.2367 3.57333 11.07 4.36667L13.3533 2.08333C11.9667 0.793333 10.1567 0 8 0C4.87333 0 2.17 1.79333 0.853333 4.40667L3.51333 6.47C4.14333 4.57333 5.91333 3.16667 8 3.16667Z" fill="#EA4335" />
+                                                <path d="M15.66 8.18335C15.66 7.66 15.61 7.15335 15.5333 6.66669H8V9.67335H12.3133C12.12 10.66 11.56 11.5 10.72 12.0667L13.2967 14.0667C14.8 12.6734 15.66 10.6134 15.66 8.18335Z" fill="#4285F4" />
+                                                <path d="M3.51 9.53C3.35 9.04667 3.25667 8.53334 3.25667 8C3.25667 7.46667 3.34667 6.95334 3.51 6.47L0.85 4.40667C0.306667 5.48667 0 6.70667 0 8C0 9.29334 0.306667 10.5133 0.853333 11.5933L3.51 9.53Z" fill="#FBBC05" />
+                                                <path d="M8 16C10.16 16 11.9767 15.29 13.2967 14.0633L10.72 12.0633C10.0033 12.5467 9.08 12.83 8 12.83C5.91333 12.83 4.14333 11.4233 3.51 9.52667L0.85 11.59C2.17 14.2067 4.87333 16 8 16Z" fill="#34A853" />
+                                            </g>
+                                        </svg>
+                                    </span>
+
+                                    <span>
+                                        {isLoading ? "Continuing with Google..." : "Continue with Google"}
+                                    </span>
+                                </button>
+                                <p className="text-xs text-slate-500 mt-2 text-center">
+                                    Google sign-in works only for existing accounts
+                                </p>
+                            </div>
+                        )}
+
+                        {mode === "SIGNUP" && (<div>
                             <button
-                                onClick={handleGoogleLogin}
-                                disabled={isLoading}
+                                onClick={handleGoogleSignup}
+                                disabled={
+                                    isLoading ||
+                                    !formData.password ||
+                                    (
+                                        activeRole === UserRole.STUDENT &&
+                                        (!formData.registerNo || !formData.section || !formData.year || !formData.department)
+                                    ) ||
+                                    (
+                                        activeRole === UserRole.FACULTY &&
+                                        !formData.secretCode
+                                    )
+                                }
                                 className="
-      w-full mt-3
-      flex items-center justify-center gap-3
-      rounded-xl px-4 py-3
-      border border-slate-700
-      bg-slate-900 hover:bg-slate-800
-      text-slate-200 text-sm font-semibold
-      transition-colors
-      disabled:opacity-60 disabled:cursor-not-allowed
-    "
+                                    w-full mt-3
+                                    flex items-center justify-center gap-3
+                                    rounded-xl px-4 py-3
+                                    border border-slate-700
+                                    bg-slate-900 hover:bg-slate-800
+                                    text-slate-200 text-sm font-semibold
+                                    transition-colors
+                                    disabled:opacity-60 disabled:cursor-not-allowed
+                                "
                             >
                                 {/* Google Icon */}
                                 <span className="flex items-center">
@@ -596,64 +696,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                             <path d="M3.51 9.53C3.35 9.04667 3.25667 8.53334 3.25667 8C3.25667 7.46667 3.34667 6.95334 3.51 6.47L0.85 4.40667C0.306667 5.48667 0 6.70667 0 8C0 9.29334 0.306667 10.5133 0.853333 11.5933L3.51 9.53Z" fill="#FBBC05" />
                                             <path d="M8 16C10.16 16 11.9767 15.29 13.2967 14.0633L10.72 12.0633C10.0033 12.5467 9.08 12.83 8 12.83C5.91333 12.83 4.14333 11.4233 3.51 9.52667L0.85 11.59C2.17 14.2067 4.87333 16 8 16Z" fill="#34A853" />
                                         </g>
-                                        <defs>
-                                            <clipPath id="clip0">
-                                                <rect width="16" height="16" fill="white" />
-                                            </clipPath>
-                                        </defs>
                                     </svg>
                                 </span>
 
-                                {/* Button Text */}
                                 <span>
-                                    {isLoading ? "Continuing with Google..." : "Continue with Google"}
+                                    {isLoading ? "Creating..." : "Continue with Google"}
                                 </span>
                             </button>
+                            <p className="text-xs text-slate-500 mt-2 text-center">
+                                Fill required details to continue with Google
+                            </p>
+                        </div>
                         )}
 
-                        <p className="text-xs text-slate-500 mt-2 text-center">
-                            Google sign-in works only for existing accounts
-                        </p>
-
-                        {/* Google Sign-In (Simulated) - Hidden for now */}
-                        {/* <div className="mt-6 pt-6 border-t border-slate-700/50">
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setIsLoading(true);
-                                    try {
-                                        const data = await googleAuthMock('mock.student@citchennai.net', 'Mock Student');
-                                        onLogin(data.user);
-                                    } catch (err: any) {
-                                        setError(err.message);
-                                        setShowErrorModal(true);
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                className="w-full bg-white hover:bg-slate-100 text-slate-900 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                    <path
-                                        fill="currentColor"
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                    />
-                                </svg>
-                                Google
-                            </button>
-                        </div> */}
                     </div>
                 </div>
 
