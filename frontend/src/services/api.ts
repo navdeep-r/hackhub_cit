@@ -29,17 +29,6 @@ export const signupUser = async (userData: any): Promise<{ user: User, token: st
   return data;
 };
 
-export const googleAuthMock = async (email: string, name: string): Promise<{ user: User, token: string }> => {
-  const res = await fetch(`${API_BASE}/auth/google`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, name })
-  });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error);
-  return data;
-};
-
 // --- Hackathons ---
 export const getHackathons = async (): Promise<Hackathon[]> => {
   const res = await fetch(`${API_BASE}/hackathons`);
@@ -173,3 +162,20 @@ export const analyzeEngagementTrends = async (dataJSON: string): Promise<string>
   const data = await res.json();
   return data.text;
 };
+
+// GOOGLE AUTH
+
+export async function googleLogin(data: any) {
+  console.log("🌐 calling /api/auth/google/login with:", data);
+
+  const res = await fetch(`${API_BASE}/auth/google/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+
+  return res.json();
+}

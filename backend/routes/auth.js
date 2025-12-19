@@ -1,13 +1,17 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import google from "./google.js";
+// import google from "./google.mock.js";
 
 const auth = Router();
 const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+
+auth.use('/google', google);
 
 auth.post('/signup', async (req, res) => {
     SHOW_LOGS && console.log("called /api/auth/signup")
@@ -166,43 +170,6 @@ auth.get('/me', async (req, res) => {
     } catch (err) {
         SHOW_LOGS && console.error('❌ Me Auth Error:', err);
         return res.status(401).json({ success: false });
-    }
-});
-
-// Google Auth Mock Route
-auth.post('/google', async (req, res) => {
-    try {
-        // Check if MongoDB is connected
-        if (mongoose.connection.readyState !== 1) {
-            return res.status(500).json({ success: false, error: 'Database not connected' });
-        }
-
-        const { email, name } = req.body;
-
-        // Find or create user
-        let user = await User.findOne({ email });
-
-        if (!user) {
-            // Create new user for Google auth
-            const newUser = new User({
-                name,
-                email,
-                password: '', // No password for Google auth
-                role: email.includes('faculty') ? 'FACULTY' : 'STUDENT'
-            });
-            user = await newUser.save();
-        }
-
-        // Generate JWT token
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
-
-        // Return user data without password
-        const { password: _, ...userWithoutPassword } = user.toObject();
-
-        res.json({ success: true, user: userWithoutPassword, token });
-    } catch (err) {
-        SHOW_LOGS && console.error('Google Auth Error:', err);
-        res.status(500).json({ success: false, error: err.message || 'Internal server error' });
     }
 });
 

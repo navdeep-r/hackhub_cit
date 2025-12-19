@@ -1,9 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserRole, User } from '../types';
 import { Shield, GraduationCap, ArrowRight, Lock, Mail, User as UserIcon, AlertCircle, Hash, Key, LayoutGrid, Eye, EyeOff } from 'lucide-react';
-import { loginUser, signupUser, googleAuthMock } from '../services/api';
+import { loginUser, signupUser, googleLogin } from '../services/api';
 import { ErrorModal } from './ErrorModal';
+
+declare global {
+    interface Window {
+        google?: any;
+    }
+}
 
 interface LoginProps {
     onLogin: (user: User) => void;
@@ -47,6 +53,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         secretCode: ''
     });
 
+    const googleInitialized = React.useRef(false);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
 
@@ -64,6 +72,42 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         setError(null);
     };
+
+    const handleGoogleLogin = () => {
+        if (isLoading) return;
+
+        if (!window.google) {
+            setError("Google SDK not loaded");
+            setShowErrorModal(true);
+            return;
+        }
+
+        window.google.accounts.id.prompt();
+    };
+
+    const handleGoogleCredential = async (credential: string) => {
+        try {
+            setIsLoading(true);
+
+            const res = await googleLogin({
+                idToken: credential,
+            });
+
+            if (!res.success) {
+                setError(res.error || "Google login failed");
+                setShowErrorModal(true);
+                return;
+            }
+
+            onLogin(res.user);
+        } catch (err: any) {
+            setError(err.message || "Google login failed");
+            setShowErrorModal(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -133,6 +177,21 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             setActiveRole(UserRole.STUDENT); // Reset to student when switching to login
         }
     };
+
+    useEffect(() => {
+        if (!window.google) return;
+        if (mode !== 'LOGIN') return;
+        if (googleInitialized.current) return;
+
+        window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: (response: any) => {
+                handleGoogleCredential(response.credential);
+            },
+        });
+
+        googleInitialized.current = true;
+    }, [mode]);
 
     return (
         <div className="min-h-[90vh] flex items-center justify-center px-4 py-12 relative overflow-hidden">
@@ -512,6 +571,49 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 {mode === 'LOGIN' ? 'Sign up' : 'Log in'}
                             </button>
                         </div>
+
+                        {mode === 'LOGIN' && (
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={isLoading}
+                                className="
+      w-full mt-3
+      flex items-center justify-center gap-3
+      rounded-xl px-4 py-3
+      border border-slate-700
+      bg-slate-900 hover:bg-slate-800
+      text-slate-200 text-sm font-semibold
+      transition-colors
+      disabled:opacity-60 disabled:cursor-not-allowed
+    "
+                            >
+                                {/* Google Icon */}
+                                <span className="flex items-center">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                                        <g clipPath="url(#clip0)">
+                                            <path d="M8 3.16667C9.18 3.16667 10.2367 3.57333 11.07 4.36667L13.3533 2.08333C11.9667 0.793333 10.1567 0 8 0C4.87333 0 2.17 1.79333 0.853333 4.40667L3.51333 6.47C4.14333 4.57333 5.91333 3.16667 8 3.16667Z" fill="#EA4335" />
+                                            <path d="M15.66 8.18335C15.66 7.66 15.61 7.15335 15.5333 6.66669H8V9.67335H12.3133C12.12 10.66 11.56 11.5 10.72 12.0667L13.2967 14.0667C14.8 12.6734 15.66 10.6134 15.66 8.18335Z" fill="#4285F4" />
+                                            <path d="M3.51 9.53C3.35 9.04667 3.25667 8.53334 3.25667 8C3.25667 7.46667 3.34667 6.95334 3.51 6.47L0.85 4.40667C0.306667 5.48667 0 6.70667 0 8C0 9.29334 0.306667 10.5133 0.853333 11.5933L3.51 9.53Z" fill="#FBBC05" />
+                                            <path d="M8 16C10.16 16 11.9767 15.29 13.2967 14.0633L10.72 12.0633C10.0033 12.5467 9.08 12.83 8 12.83C5.91333 12.83 4.14333 11.4233 3.51 9.52667L0.85 11.59C2.17 14.2067 4.87333 16 8 16Z" fill="#34A853" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0">
+                                                <rect width="16" height="16" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                </span>
+
+                                {/* Button Text */}
+                                <span>
+                                    {isLoading ? "Continuing with Google..." : "Continue with Google"}
+                                </span>
+                            </button>
+                        )}
+
+                        <p className="text-xs text-slate-500 mt-2 text-center">
+                            Google sign-in works only for existing accounts
+                        </p>
 
                         {/* Google Sign-In (Simulated) - Hidden for now */}
                         {/* <div className="mt-6 pt-6 border-t border-slate-700/50">
