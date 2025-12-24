@@ -3,9 +3,9 @@ import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Termin
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { FilterPanel } from './FilterPanel';
 
-const NODE_ENV = process.env.NODE_ENV || "development";
+const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
-const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+const SHOW_LOGS = (!isProduction) || import.meta.env.SHOW_LOGS == '1';
 
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {

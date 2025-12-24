@@ -1,159 +1,162 @@
 
-import React, { useState, useEffect } from 'react';
-import { getStudentProfile } from './services/api';
-import { HashRouter as Router } from 'react-router-dom';
 import { Code2, LogOut } from 'lucide-react';
-import { UserRole, User } from './types';
+import React, { useEffect, useState } from 'react';
+import { HashRouter as Router } from 'react-router-dom';
+import { CompleteSignup } from './components/CompleteSignup';
 import { FacultyDashboard } from './components/FacultyDashboard';
-import { StudentDashboard } from './components/StudentDashboard';
 import { Login } from './components/Login';
-import { ProfileModal } from './components/ProfileModal';
 import { NotificationButton } from './components/NotificationButton';
-import { Hackathon } from './types';
+import { ProfileModal } from './components/ProfileModal';
+import { StudentDashboard } from './components/StudentDashboard';
+import { Hackathon, User, UserRole } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
-const NODE_ENV = process.env.NODE_ENV || "development";
+const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
-const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+const SHOW_LOGS = (!isProduction) || import.meta.env.SHOW_LOGS == '1';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [notificationHackathons, setNotificationHackathons] = useState<Hackathon[]>([]);
-  const [notificationHandlers, setNotificationHandlers] = useState<{ onDismiss: (id: string) => void, onDismissAll: () => void } | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [notificationHackathons, setNotificationHackathons] = useState<Hackathon[]>([]);
+    const [notificationHandlers, setNotificationHandlers] = useState<{ onDismiss: (id: string) => void, onDismissAll: () => void } | null>(null);
 
-  // Restore user on page reload
-  useEffect(() => {
-    async function restoreUser() {
-      try {
-        SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/me`)
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include'
-        });
-        const data = await res.json();
-        if (data.success) {
-          setUser(data.user);
+    // Restore user on page reload
+    useEffect(() => {
+        async function restoreUser() {
+            try {
+                SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/me`)
+                const res = await fetch(`${API_BASE}/auth/me`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setUser(data.user);
+                }
+            } catch { }
         }
-      } catch { }
-    }
-    restoreUser();
-  }, []);
+        restoreUser();
+    }, []);
 
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-  };
+    const handleLogin = (loggedInUser: User) => {
+        setUser(loggedInUser);
+    };
 
-  const handleLogout = async () => {
-    SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/logout`)
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-    setUser(null);
-  };
+    const handleLogout = async () => {
+        SHOW_LOGS && console.log(`log1: /${API_BASE}/auth/logout`)
+        await fetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        setUser(null);
+    };
 
-  const handleNotificationsChange = (hackathons: Hackathon[], handlers: { onDismiss: (id: string) => void, onDismissAll: () => void }) => {
-    setNotificationHackathons(hackathons);
-    setNotificationHandlers(handlers);
-  };
+    const handleNotificationsChange = (hackathons: Hackathon[], handlers: { onDismiss: (id: string) => void, onDismissAll: () => void }) => {
+        setNotificationHackathons(hackathons);
+        setNotificationHandlers(handlers);
+    };
 
-  return (
-    <Router>
-      <div className="min-h-screen font-sans text-slate-200 selection:bg-blue-500/30">
-        {/* Animated Background Elements */}
-        <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
-          <div className="absolute top-[20%] right-[20%] w-[20%] h-[20%] bg-cyan-600/5 rounded-full blur-[80px]"></div>
-        </div>
+    const isCompleteSignup = window.location.hash.startsWith("#/complete-signup");
 
-        {!user ? (
-          <Login onLogin={handleLogin} />
-        ) : (
-          <>
-            {/* Navigation Bar */}
-            <nav className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
-                  <div className="flex items-center gap-3 animate-fade-in">
-                    <div className="relative group">
-                      <div className={`absolute inset-0 rounded-lg blur opacity-40 group-hover:opacity-75 transition-opacity duration-500 ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}></div>
-                      <div className={`relative p-2 rounded-lg ${user.role === UserRole.FACULTY ? 'bg-indigo-950/80 border border-indigo-500/50' : 'bg-cyan-950/80 border border-cyan-500/50'} text-white transition-colors duration-300`}>
-                        <Code2 size={24} />
-                      </div>
-                    </div>
-                    <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                      HackHub
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 animate-fade-in">
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setIsProfileOpen(true)}>
-                      {user.profilePicture ? (
-                        <img src={user.profilePicture} alt="Profile" className="w-6 h-6 rounded-full object-cover border border-slate-600" />
-                      ) : (
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}>
-                          {user.name.charAt(0)}
-                        </div>
-                      )}
-                      <span className="text-xs font-medium text-slate-400">
-                        {user.name} ({user.role === UserRole.FACULTY ? 'Faculty' : 'Student'})
-                      </span>
-                    </div>
-
-                    {/* Notification Button - Only for Students */}
-                    {user.role === UserRole.STUDENT && notificationHandlers && (
-                      <NotificationButton
-                        hackathons={notificationHackathons}
-                        onDismiss={notificationHandlers.onDismiss}
-                        onDismissAll={notificationHandlers.onDismissAll}
-                      />
-                    )}
-
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
-                    >
-                      <LogOut size={18} />
-                      <span className="hidden sm:inline">Sign Out</span>
-                    </button>
-                  </div>
+    return (
+        <Router>
+            <div className="min-h-screen font-sans text-slate-200 selection:bg-blue-500/30">
+                {/* Animated Background Elements */}
+                <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
+                    <div className="absolute top-[20%] right-[20%] w-[20%] h-[20%] bg-cyan-600/5 rounded-full blur-[80px]"></div>
                 </div>
-              </div>
-            </nav>
 
-            {/* Main Content Area */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-              {user.role === UserRole.FACULTY ? (
-                <FacultyDashboard />
-              ) : (
-                <StudentDashboard user={user} onNotificationsChange={handleNotificationsChange} />
-              )}
-            </main>
+                {isCompleteSignup ? (
+                    <CompleteSignup />
+                ) : !user ? (
+                    <Login onLogin={handleLogin} />
+                ) : (
+                    <>
+                        {/* Navigation Bar */}
+                        <nav className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div className="flex justify-between h-16">
+                                    <div className="flex items-center gap-3 animate-fade-in">
+                                        <div className="relative group">
+                                            <div className={`absolute inset-0 rounded-lg blur opacity-40 group-hover:opacity-75 transition-opacity duration-500 ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}></div>
+                                            <div className={`relative p-2 rounded-lg ${user.role === UserRole.FACULTY ? 'bg-indigo-950/80 border border-indigo-500/50' : 'bg-cyan-950/80 border border-cyan-500/50'} text-white transition-colors duration-300`}>
+                                                <Code2 size={24} />
+                                            </div>
+                                        </div>
+                                        <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                            HackHub
+                                        </span>
+                                    </div>
 
-            {/* Footer */}
-            <footer className="border-t border-white/5 py-8 mt-auto">
-              <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
-                <p>&copy; {new Date().getFullYear()} HackHub. CIT'S ONE STOP HACKATHON PORTAL.</p>
-                <div className="flex gap-6">
-                  <a href="#" className="hover:text-blue-400 transition-colors">BY:THE QuantumDevs</a>
-                </div>
-              </div>
-            </footer>
-          </>
-        )}
-        {user && (
-          <ProfileModal
-            isOpen={isProfileOpen}
-            onClose={() => setIsProfileOpen(false)}
-            user={user}
-            onUpdateUser={setUser}
-          />
-        )}
-      </div>
-    </Router >
-  );
+                                    <div className="flex items-center gap-4 animate-fade-in">
+                                        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setIsProfileOpen(true)}>
+                                            {user.profilePicture ? (
+                                                <img src={user.profilePicture} alt="Profile" className="w-6 h-6 rounded-full object-cover border border-slate-600" />
+                                            ) : (
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}>
+                                                    {user.name.charAt(0)}
+                                                </div>
+                                            )}
+                                            <span className="text-xs font-medium text-slate-400">
+                                                {user.name} ({user.role === UserRole.FACULTY ? 'Faculty' : 'Student'})
+                                            </span>
+                                        </div>
+
+                                        {/* Notification Button - Only for Students */}
+                                        {user.role === UserRole.STUDENT && notificationHandlers && (
+                                            <NotificationButton
+                                                hackathons={notificationHackathons}
+                                                onDismiss={notificationHandlers.onDismiss}
+                                                onDismissAll={notificationHandlers.onDismissAll}
+                                            />
+                                        )}
+
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
+                                        >
+                                            <LogOut size={18} />
+                                            <span className="hidden sm:inline">Sign Out</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </nav>
+
+                        {/* Main Content Area */}
+                        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+                            {user.role === UserRole.FACULTY ? (
+                                <FacultyDashboard />
+                            ) : (
+                                <StudentDashboard user={user} onNotificationsChange={handleNotificationsChange} />
+                            )}
+                        </main>
+
+                        {/* Footer */}
+                        <footer className="border-t border-white/5 py-8 mt-auto">
+                            <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
+                                <p>&copy; {new Date().getFullYear()} HackHub. CIT'S ONE STOP HACKATHON PORTAL.</p>
+                                <div className="flex gap-6">
+                                    <a href="#" className="hover:text-blue-400 transition-colors">BY:THE QuantumDevs</a>
+                                </div>
+                            </div>
+                        </footer>
+                    </>
+                )}
+                {user && (
+                    <ProfileModal
+                        isOpen={isProfileOpen}
+                        onClose={() => setIsProfileOpen(false)}
+                        user={user}
+                        onUpdateUser={setUser}
+                    />
+                )}
+            </div>
+        </Router >
+    );
 };
 
 export default App;

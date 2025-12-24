@@ -3,9 +3,9 @@ import { Hackathon, Registration } from '../types';
 import { X, Calendar, MapPin, Clock, Users, Globe, Award, FileText, Eye, Tag, TrendingUp, ExternalLink, Sparkles, Timer } from 'lucide-react';
 import { getRegistrations } from '../services/api';
 
-const NODE_ENV = process.env.NODE_ENV || "development";
+const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
-const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
+const SHOW_LOGS = (!isProduction) || import.meta.env.SHOW_LOGS == '1';
 
 interface HackathonDetailsModalProps {
     isOpen: boolean;
