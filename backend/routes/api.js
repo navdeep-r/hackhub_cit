@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import hackathons from './hackathons.js';
+import analytics from './analytics.js';
 import auth from './auth.js';
+import extension_webhook from './extension-webhook.js';
+import hackathons from './hackathons.js';
 import profile from './profile.js';
 import registrations from './registration.js';
-import analytics from './analytics.js';
 import users from './users.js';
-import extension_webhook from './extension-webhook.js';
 
 const api = Router();
 

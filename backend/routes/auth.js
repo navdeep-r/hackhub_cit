@@ -1,7 +1,7 @@
-import { Router } from "express";
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
+import { Router } from "express";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import google from "./google.js";
 // import google from "./google.mock.js";
@@ -12,92 +12,6 @@ const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 auth.use('/google', google);
-
-auth.post('/signup', async (req, res) => {
-    SHOW_LOGS && console.log("called /api/auth/signup")
-    try {
-        // Removed console.log statements
-
-        // Check if MongoDB is connected
-        if (mongoose.connection.readyState !== 1) {
-            // Removed console.log
-            return res.status(500).json({ success: false, error: 'Database not connected' });
-        }
-
-        const { name, email, password, role, department, year, registerNo, section, secretCode } = req.body;
-
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            // Removed console.log
-            return res.status(400).json({ success: false, error: 'User already exists with this email' });
-        }
-
-        // Check for duplicate registration number (for students)
-        if (role === 'STUDENT' && registerNo) {
-            const existingRegNo = await User.findOne({ registerNo });
-            if (existingRegNo) {
-                // Removed console.log
-                return res.status(400).json({ success: false, error: 'This registration number is already in use. Please check your registration number.' });
-            }
-        }
-
-        // Validate citchennai.net email for STUDENTS only (faculty can use any email)
-        if (role === 'STUDENT' && !email.endsWith('@citchennai.net')) {
-            // Removed console.log
-            return res.status(400).json({ success: false, error: 'Students must use an @citchennai.net email address' });
-        }
-
-        // Verify SEC_KEY for faculty signups
-        if (role === 'FACULTY') {
-            const validSecretKey = process.env.SEC_KEY || 'QWERTY123';
-            if (!secretCode || secretCode !== validSecretKey) {
-                // Removed console.log
-                return res.status(403).json({ success: false, error: 'Invalid faculty secret code. Please contact administration.' });
-            }
-        }
-
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Removed console.log
-        // Create new user
-        const newUser = new User({
-            name,
-            email,
-            password: hashedPassword,
-            role,
-            department,
-            year,
-            registerNo,
-            section // Add section field
-        });
-
-        const savedUser = await newUser.save();
-        // Removed console.log
-
-        // Generate JWT token
-        const token = jwt.sign({ id: savedUser._id, role: savedUser.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
-
-        // Return user data without password
-        const { password: _, ...userWithoutPassword } = savedUser.toObject();
-
-        res
-            .cookie("auth_token", token, {
-                httpOnly: true,
-                secure: isProduction,
-                sameSite: isProduction ? "none" : "lax",
-                path: '/',
-            })
-
-        res.status(201).json({ success: true, user: userWithoutPassword, token });
-    } catch (err) {
-        SHOW_LOGS && console.error('❌ Signup Error:', err);
-        SHOW_LOGS && console.error('Error stack:', err.stack);
-        res.status(500).json({ success: false, error: err.message || 'Internal server error' });
-    }
-});
 
 // Login Route
 auth.post('/login', async (req, res) => {
@@ -173,7 +87,7 @@ auth.get('/me', async (req, res) => {
     }
 });
 
-auth.post('/logout', (req, res) => {
+auth.post('/logout', (_req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
         secure: isProduction,

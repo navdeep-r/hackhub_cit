@@ -1,4 +1,3 @@
-
 import { Code2, LogOut } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router } from 'react-router-dom';
@@ -9,6 +8,7 @@ import { NotificationButton } from './components/NotificationButton';
 import { ProfileModal } from './components/ProfileModal';
 import { StudentDashboard } from './components/StudentDashboard';
 import { Hackathon, User, UserRole } from './types';
+import { resolveProfilePicture } from './utils/profilePicture';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
@@ -59,6 +59,8 @@ const App: React.FC = () => {
 
     const isCompleteSignup = window.location.hash.startsWith("#/complete-signup");
 
+    const avatar = user ? resolveProfilePicture(user) : null;
+
     return (
         <Router>
             <div className="min-h-screen font-sans text-slate-200 selection:bg-blue-500/30">
@@ -93,13 +95,21 @@ const App: React.FC = () => {
 
                                     <div className="flex items-center gap-4 animate-fade-in">
                                         <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/50 border border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setIsProfileOpen(true)}>
-                                            {user.profilePicture ? (
-                                                <img src={user.profilePicture} alt="Profile" className="w-6 h-6 rounded-full object-cover border border-slate-600" />
-                                            ) : (
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${user.role === UserRole.FACULTY ? 'bg-indigo-500' : 'bg-cyan-500'}`}>
-                                                    {user.name.charAt(0)}
-                                                </div>
-                                            )}
+                                            {avatar ? (
+                                                avatar.type === 'google' ? (
+                                                    <img
+                                                        src={avatar.src}
+                                                        alt="Profile"
+                                                        className="w-6 h-6 rounded-md object-cover border border-slate-600"
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        className={`w-6 h-6 rounded-md flex items-center justify-center ${avatar.gradient}`}
+                                                    >
+                                                        <avatar.icon size={12} className="text-white" />
+                                                    </div>
+                                                )
+                                            ) : null}
                                             <span className="text-xs font-medium text-slate-400">
                                                 {user.name} ({user.role === UserRole.FACULTY ? 'Faculty' : 'Student'})
                                             </span>

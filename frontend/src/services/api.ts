@@ -1,4 +1,4 @@
-import { Hackathon, Registration, StudentProfile, User } from '../types';
+import { Hackathon, Registration, User } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'; // Proxied via Vite
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
@@ -12,17 +12,6 @@ export const loginUser = async (credentials: any): Promise<{ user: User, token: 
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(credentials)
-  });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error);
-  return data;
-};
-
-export const signupUser = async (userData: any): Promise<{ user: User, token: string }> => {
-  const res = await fetch(`${API_BASE}/auth/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData)
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
@@ -164,7 +153,6 @@ export const analyzeEngagementTrends = async (dataJSON: string): Promise<string>
 };
 
 // GOOGLE AUTH
-
 export async function googleLogin(data: any) {
   console.log("🌐 calling /api/auth/google/login with:", data);
 
@@ -178,18 +166,4 @@ export async function googleLogin(data: any) {
   });
 
   return res.json();
-}
-
-export async function googleSignup(data: any) {
-  const res = await fetch(`${API_BASE}/auth/google/signup`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  const json = await res.json();
-  return json;
 }

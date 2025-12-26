@@ -30,5 +30,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.kiro
 
 client_secret_2_1000665746902-iaknn1e7c12vhmpb416f2o916m0oerf0.apps.googleusercontent.com.json

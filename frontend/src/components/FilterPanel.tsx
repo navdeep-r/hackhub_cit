@@ -1,5 +1,5 @@
+import { Calendar, ChevronDown, ChevronUp, Filter, Globe, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { Filter, X, Calendar, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FilterPanelProps {
     selectedPlatforms: string[];

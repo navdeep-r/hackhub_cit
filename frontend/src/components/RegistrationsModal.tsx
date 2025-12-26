@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Download, Users, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Filter, Users, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Hackathon, Registration, User } from '../types';
 
 interface RegistrationsModalProps {
@@ -13,20 +13,6 @@ interface RegistrationsModalProps {
 const ITEMS_PER_PAGE = 20;
 
 // Department-specific section ranges
-const getSectionsForDepartment = (department: string) => {
-    if (!department) return ['All', 'A', 'B', 'C', 'D', 'E', 'F'];
-
-    const dept = department.toLowerCase();
-    if (dept.includes('cse')) {
-        return ['All', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
-    } else if (dept.includes('aids') || dept.includes('aiml')) {
-        return ['All', 'A', 'B', 'C'];
-    } else if (dept.includes('cyber')) {
-        return ['All', '1'];
-    } else {
-        return ['All', 'A', 'B', 'C', 'D', 'E', 'F'];
-    }
-};
 
 export const RegistrationsModal: React.FC<RegistrationsModalProps> = ({
     isOpen,

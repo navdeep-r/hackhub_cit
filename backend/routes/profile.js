@@ -28,7 +28,16 @@ profile.put('/:id', async (req, res) => {
             return res.status(500).json({ error: 'Database not connected' });
         }
 
-        const { name, department, year, registerNo, section, profilePicture, bio, skills } = req.body;
+        const {
+            name,
+            department,
+            year,
+            registerNo,
+            section,
+            bio,
+            skills,
+            profilePicturePreset,
+        } = req.body;
 
         // Find user and update
         const user = await User.findById(req.params.id);
@@ -42,7 +51,7 @@ profile.put('/:id', async (req, res) => {
         if (year) user.year = year;
         if (registerNo) user.registerNo = registerNo;
         if (section !== undefined) user.section = section;
-        if (profilePicture !== undefined) user.profilePicture = profilePicture;
+        if (profilePicturePreset !== undefined) user.profilePicturePreset = profilePicturePreset;
         if (bio !== undefined) user.bio = bio;
         if (skills !== undefined) user.skills = skills;
 

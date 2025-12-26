@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Hackathon, Registration } from '../types';
-import { X, Calendar, MapPin, Clock, Users, Globe, Award, FileText, Eye, Tag, TrendingUp, ExternalLink, Sparkles, Timer } from 'lucide-react';
+import { Award, Calendar, Clock, ExternalLink, Eye, FileText, Globe, MapPin, Timer, TrendingUp, Users, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { getRegistrations } from '../services/api';
+import { Hackathon, Registration } from '../types';
 
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
@@ -15,7 +15,7 @@ interface HackathonDetailsModalProps {
 
 export const HackathonDetailsModal: React.FC<HackathonDetailsModalProps> = ({ isOpen, onClose, hackathon }) => {
     const [registrations, setRegistrations] = useState<Registration[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && hackathon) {

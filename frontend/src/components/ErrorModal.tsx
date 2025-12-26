@@ -1,5 +1,5 @@
+import { AlertCircle, X } from 'lucide-react';
 import React, { useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
 
 interface ErrorModalProps {
     isOpen: boolean;

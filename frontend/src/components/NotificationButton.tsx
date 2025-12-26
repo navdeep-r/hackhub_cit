@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, Clock } from 'lucide-react';
+import { Bell, Clock, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Hackathon } from '../types';
 
 interface NotificationButtonProps {
@@ -77,8 +77,8 @@ export const NotificationButton: React.FC<NotificationButtonProps> = ({
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`relative p-2.5 rounded-lg transition-all duration-300 ${hasNotifications
-                        ? 'text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 notification-btn-glow'
-                        : 'text-slate-400 bg-slate-900/50 border border-slate-800 hover:bg-slate-800 hover:text-slate-300'
+                    ? 'text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 notification-btn-glow'
+                    : 'text-slate-400 bg-slate-900/50 border border-slate-800 hover:bg-slate-800 hover:text-slate-300'
                     }`}
                 title={hasNotifications ? `${notificationCount} approaching deadline${notificationCount > 1 ? 's' : ''}` : 'No notifications'}
             >

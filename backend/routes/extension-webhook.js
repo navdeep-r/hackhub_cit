@@ -1,8 +1,8 @@
 import { Router } from "express";
+import jwt from 'jsonwebtoken';
+import Hackathon from "../models/Hackathon.js";
 import Registration from "../models/Registration.js";
 import User from "../models/User.js";
-import Hackathon from "../models/Hackathon.js";
-import jwt from 'jsonwebtoken';
 
 const extension_webhook = Router();
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -15,7 +15,7 @@ extension_webhook.post('/', async (req, res) => {
     SHOW_LOGS && console.log("🍪 COOKIES:", req.cookies);
     SHOW_LOGS && console.log("=========================================");
     try {
-        const { userToken, currentUrl, keyword, domain } = req.body;
+        const { userToken, currentUrl } = req.body;
 
         if (!userToken) {
             return res.status(401).json({ success: false, error: 'Missing token' });

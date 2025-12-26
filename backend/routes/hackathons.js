@@ -8,7 +8,7 @@ const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
 
-hackathons.get('/', async (req, res) => {
+hackathons.get('/', async (_req, res) => {
     try {
         // Check if MongoDB is connected
         if (mongoose.connection.readyState !== 1) {

@@ -9,7 +9,13 @@ const userSchema = new mongoose.Schema({
   year: String,
   registerNo: String,
   section: String, // Added section field for students
-  profilePicture: String, // Base64 string
+  profilePicturePreset: {
+    type: String,
+    default: 'google'
+  },
+  googleProfileImage: {
+    type: String
+  },
   bio: String,
   skills: [String],
   createdAt: { type: Date, default: Date.now }

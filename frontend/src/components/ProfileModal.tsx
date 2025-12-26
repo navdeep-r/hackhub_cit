@@ -1,7 +1,8 @@
+import { Building, Calendar, Hash, Loader2, Mail, Save, User as UserIcon, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { User, UserRole } from '../types';
-import { X, Save, Loader2, Mail, Building, Calendar, Hash, User as UserIcon, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, BookOpen, Camera, Trophy } from 'lucide-react';
 import { updateUserProfile } from '../services/api';
+import { User, UserRole } from '../types';
+import { AVATAR_PRESETS, resolveProfilePicture } from '../utils/profilePicture';
 
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
@@ -15,24 +16,24 @@ interface ProfileModalProps {
 }
 
 // Avatar options with gradient backgrounds
-const AVATAR_OPTIONS = [
-    { id: 'code-indigo', icon: Code, gradient: 'from-indigo-500 to-purple-600' },
-    { id: 'rocket-cyan', icon: Rocket, gradient: 'from-cyan-500 to-blue-600' },
-    { id: 'star-pink', icon: Star, gradient: 'from-pink-500 to-rose-600' },
-    { id: 'zap-yellow', icon: Zap, gradient: 'from-yellow-500 to-orange-600' },
-    { id: 'heart-red', icon: Heart, gradient: 'from-red-500 to-pink-600' },
-    { id: 'music-purple', icon: Music, gradient: 'from-purple-500 to-indigo-600' },
-    { id: 'palette-teal', icon: Palette, gradient: 'from-teal-500 to-emerald-600' },
-    { id: 'coffee-amber', icon: Coffee, gradient: 'from-amber-500 to-orange-600' },
-    { id: 'gamepad-violet', icon: Gamepad2, gradient: 'from-violet-500 to-purple-600' },
-    { id: 'book-emerald', icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
-    { id: 'camera-sky', icon: Camera, gradient: 'from-sky-500 to-cyan-600' },
-    { id: 'trophy-gold', icon: Trophy, gradient: 'from-yellow-500 to-amber-600' },
-];
+// const AVATAR_PRESETS = [
+//     { id: 'code-indigo', icon: Code, gradient: 'from-indigo-500 to-purple-600' },
+//     { id: 'rocket-cyan', icon: Rocket, gradient: 'from-cyan-500 to-blue-600' },
+//     { id: 'star-pink', icon: Star, gradient: 'from-pink-500 to-rose-600' },
+//     { id: 'zap-yellow', icon: Zap, gradient: 'from-yellow-500 to-orange-600' },
+//     { id: 'heart-red', icon: Heart, gradient: 'from-red-500 to-pink-600' },
+//     { id: 'music-purple', icon: Music, gradient: 'from-purple-500 to-indigo-600' },
+//     { id: 'palette-teal', icon: Palette, gradient: 'from-teal-500 to-emerald-600' },
+//     { id: 'coffee-amber', icon: Coffee, gradient: 'from-amber-500 to-orange-600' },
+//     { id: 'gamepad-violet', icon: Gamepad2, gradient: 'from-violet-500 to-purple-600' },
+//     { id: 'book-emerald', icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
+//     { id: 'camera-sky', icon: Camera, gradient: 'from-sky-500 to-cyan-600' },
+//     { id: 'trophy-gold', icon: Trophy, gradient: 'from-yellow-500 to-amber-600' },
+// ];
 
-const getAvatarConfig = (avatarId?: string) => {
-    return AVATAR_OPTIONS.find(a => a.id === avatarId) || AVATAR_OPTIONS[0];
-};
+// const getAvatarConfig = (avatarId?: string) => {
+//     return AVATAR_OPTIONS.find(a => a.id === avatarId) || AVATAR_OPTIONS[0];
+// };
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdateUser }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -44,7 +45,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
         registerNo: user.registerNo || '',
         bio: user.bio || '',
         skills: user.skills || [],
-        profilePicture: user.profilePicture || 'code-indigo'
+        profilePicturePreset: user.profilePicturePreset || 'google',
     });
 
     if (!isOpen) return null;
@@ -68,8 +69,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
         }
     };
 
-    const currentAvatar = getAvatarConfig(formData.profilePicture);
-    const AvatarIcon = currentAvatar.icon;
+    const resolvedAvatar = resolveProfilePicture({
+        profilePicturePreset: formData.profilePicturePreset,
+        googleProfileImage: user.googleProfileImage,
+    });
+    // const AvatarIcon = currentAvatar.icon;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -89,10 +93,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                     <div className="flex flex-col md:flex-row gap-8">
                         {/* Left Column: Avatar & Basic Info */}
                         <div className="flex flex-col items-center gap-4 md:w-1/3">
-                            <div className="relative group">
-                                <div className={`w-32 h-32 rounded-2xl overflow-hidden border-4 ${isEditing ? 'border-indigo-500/50' : 'border-slate-800'} bg-gradient-to-br ${currentAvatar.gradient} shadow-xl flex items-center justify-center transition-all`}>
-                                    <AvatarIcon size={56} className="text-white drop-shadow-lg" />
-                                </div>
+                            <div
+                                className={`w-32 h-32 rounded-2xl overflow-hidden border-4 ${isEditing ? 'border-indigo-500/50' : 'border-slate-800'
+                                    } shadow-xl transition-all`}
+                            >
+                                {resolvedAvatar.type === 'google' ? (
+                                    <img
+                                        src={resolvedAvatar.src}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div
+                                        className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${resolvedAvatar.gradient}`}
+                                    >
+                                        <resolvedAvatar.icon
+                                            size={56}
+                                            className="text-white drop-shadow-lg"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="text-center">
@@ -112,14 +132,45 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                                         Choose Avatar
                                     </label>
                                     <div className="grid grid-cols-3 gap-3">
-                                        {AVATAR_OPTIONS.map((avatar) => {
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setFormData({
+                                                    ...formData,
+                                                    profilePicturePreset: 'google',
+                                                })
+                                            }
+                                            className={`relative h-16 rounded-xl overflow-hidden border border-slate-700 transition-all
+    ${formData.profilePicturePreset === 'google'
+                                                    ? 'ring-4 ring-cyan-400 ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
+                                                    : 'hover:scale-105 opacity-80 hover:opacity-100'
+                                                }`}
+                                        >
+                                            <img
+                                                src={user.googleProfileImage}
+                                                alt="Google avatar"
+                                                className="w-full h-full object-cover"
+                                            />
+
+                                            {formData.profilePicturePreset === 'google' && (
+                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-cyan-400 rounded-full flex items-center justify-center shadow-lg">
+                                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                                </div>
+                                            )}
+                                        </button>
+                                        {AVATAR_PRESETS.map((avatar) => {
                                             const Icon = avatar.icon;
-                                            const isSelected = formData.profilePicture === avatar.id;
+                                            const isSelected = formData.profilePicturePreset === avatar.id;
                                             return (
                                                 <button
                                                     key={avatar.id}
                                                     type="button"
-                                                    onClick={() => setFormData({ ...formData, profilePicture: avatar.id })}
+                                                    onClick={() =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            profilePicturePreset: avatar.id,
+                                                        })
+                                                    }
                                                     className={`relative h-16 rounded-xl bg-gradient-to-br ${avatar.gradient} flex items-center justify-center transition-all cursor-pointer
                                                         ${isSelected
                                                             ? 'ring-4 ring-cyan-400 ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg shadow-cyan-500/50'
@@ -240,7 +291,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                                         registerNo: user.registerNo || '',
                                         bio: user.bio || '',
                                         skills: user.skills || [],
-                                        profilePicture: user.profilePicture || 'code-indigo'
+                                        profilePicturePreset: user.profilePicturePreset || 'google',
                                     });
                                 }}
                                 className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors"

@@ -4,7 +4,7 @@ import Hackathon from "../models/Hackathon.js";
 
 const analytics = Router();
 
-analytics.get('/', async (req, res) => {
+analytics.get('/', async (_req, res) => {
     try {
         // Check if MongoDB is connected
         if (mongoose.connection.readyState !== 1) {

@@ -1,5 +1,5 @@
+import { AlertCircle, Bell, Clock, X } from 'lucide-react';
 import React from 'react';
-import { Bell, X, AlertCircle, Clock } from 'lucide-react';
 import { Hackathon } from '../types';
 
 interface NotificationBannerProps {

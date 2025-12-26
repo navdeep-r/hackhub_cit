@@ -43,7 +43,8 @@ export interface User {
     year?: string;
     registerNo?: string;
     section?: string; // Added section field
-    profilePicture?: string;
+    profilePicturePreset?: string;
+    googleProfileImage?: string;
     bio?: string;
     skills?: string[];
     [key: string]: any;

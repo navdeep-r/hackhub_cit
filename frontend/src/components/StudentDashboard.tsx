@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, CheckCircle, Bell, ArrowRight, Search, Terminal, Globe, ExternalLink, Clock, Compass, BookOpen, X, FileText, Award, Tag, Code, Rocket, Star, Zap, Heart, Music, Palette, Coffee, Gamepad2, Camera, RefreshCw } from 'lucide-react';
-import { HackathonDetailsModal } from './HackathonDetailsModal';
+import { ArrowRight, Award, Bell, BookOpen, Calendar, CheckCircle, Clock, Compass, ExternalLink, FileText, Globe, MapPin, RefreshCw, Search, Tag, Trophy, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { resolveProfilePicture } from '../utils/profilePicture';
 import { FilterPanel } from './FilterPanel';
 
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
@@ -8,40 +8,41 @@ const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || import.meta.env.SHOW_LOGS == '1';
 
 // Utility function to truncate text to a specific word count
-const truncateTextByWords = (text: string, maxWords: number): string => {
-  if (!text || typeof text !== 'string') return 'No description provided.';
-  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-  if (words.length <= maxWords) return text.trim();
-  return words.slice(0, maxWords).join(' ') + '...';
-};
+// const truncateTextByWords = (text: string, maxWords: number): string => {
+//   if (!text || typeof text !== 'string') return 'No description provided.';
+//   const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+//   if (words.length <= maxWords) return text.trim();
+//   return words.slice(0, maxWords).join(' ') + '...';
+// };
+
+import { getHackathons, getRegistrations, incrementImpression } from '../services/api';
 import { Hackathon, Registration, User } from '../types';
-import { getHackathons, registerStudent, getRegistrations, incrementImpression } from '../services/api';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
 // Avatar helper functions
-const AVATAR_MAP: Record<string, { icon: any, gradient: string }> = {
-  'code-indigo': { icon: Code, gradient: 'from-indigo-500 to-purple-600' },
-  'rocket-cyan': { icon: Rocket, gradient: 'from-cyan-500 to-blue-600' },
-  'star-pink': { icon: Star, gradient: 'from-pink-500 to-rose-600' },
-  'zap-yellow': { icon: Zap, gradient: 'from-yellow-500 to-orange-600' },
-  'heart-red': { icon: Heart, gradient: 'from-red-500 to-pink-600' },
-  'music-purple': { icon: Music, gradient: 'from-purple-500 to-indigo-600' },
-  'palette-teal': { icon: Palette, gradient: 'from-teal-500 to-emerald-600' },
-  'coffee-amber': { icon: Coffee, gradient: 'from-amber-500 to-orange-600' },
-  'gamepad-violet': { icon: Gamepad2, gradient: 'from-violet-500 to-purple-600' },
-  'book-emerald': { icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
-  'camera-sky': { icon: Camera, gradient: 'from-sky-500 to-cyan-600' },
-  'trophy-gold': { icon: Trophy, gradient: 'from-yellow-500 to-amber-600' },
-};
+// const AVATAR_MAP: Record<string, { icon: any, gradient: string }> = {
+//   'code-indigo': { icon: Code, gradient: 'from-indigo-500 to-purple-600' },
+//   'rocket-cyan': { icon: Rocket, gradient: 'from-cyan-500 to-blue-600' },
+//   'star-pink': { icon: Star, gradient: 'from-pink-500 to-rose-600' },
+//   'zap-yellow': { icon: Zap, gradient: 'from-yellow-500 to-orange-600' },
+//   'heart-red': { icon: Heart, gradient: 'from-red-500 to-pink-600' },
+//   'music-purple': { icon: Music, gradient: 'from-purple-500 to-indigo-600' },
+//   'palette-teal': { icon: Palette, gradient: 'from-teal-500 to-emerald-600' },
+//   'coffee-amber': { icon: Coffee, gradient: 'from-amber-500 to-orange-600' },
+//   'gamepad-violet': { icon: Gamepad2, gradient: 'from-violet-500 to-purple-600' },
+//   'book-emerald': { icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
+//   'camera-sky': { icon: Camera, gradient: 'from-sky-500 to-cyan-600' },
+//   'trophy-gold': { icon: Trophy, gradient: 'from-yellow-500 to-amber-600' },
+// };
 
-const getAvatarIcon = (avatarId?: string) => {
-  return AVATAR_MAP[avatarId || 'code-indigo']?.icon || Code;
-};
+// const getAvatarIcon = (avatarId?: string) => {
+//   return AVATAR_MAP[avatarId || 'code-indigo']?.icon || Code;
+// };
 
-const getAvatarGradient = (avatarId?: string) => {
-  return AVATAR_MAP[avatarId || 'code-indigo']?.gradient || 'from-indigo-500 to-purple-600';
-};
+// const getAvatarGradient = (avatarId?: string) => {
+//   return AVATAR_MAP[avatarId || 'code-indigo']?.gradient || 'from-indigo-500 to-purple-600';
+// };
 
 interface StudentDashboardProps {
   user: User;
@@ -62,6 +63,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
   // Filter states
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
+
+  const avatar = resolveProfilePicture({
+    profilePicturePreset: user.profilePicturePreset,
+    googleProfileImage: user.googleProfileImage,
+  });
 
   // Load viewed hackathons and dismissed notifications from localStorage on mount
   useEffect(() => {
@@ -154,33 +160,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
   };
 
   // Debug function to clear viewed hackathons (for testing)
-  const clearViewedHackathons = () => {
-    setViewedHackathons(new Set());
-    localStorage.removeItem('viewedHackathons');
-    console.log('🗑️ Cleared all viewed hackathons');
-  };
 
-  const triggerConfetti = () => {
-    const count = 200;
-    const defaults = {
-      origin: { y: 0.7 },
-      zIndex: 9999
-    };
-
-    function fire(particleRatio: number, opts: any) {
-      confetti({
-        ...defaults,
-        ...opts,
-        particleCount: Math.floor(count * particleRatio)
-      });
-    }
-
-    fire(0.25, { spread: 26, startVelocity: 55 });
-    fire(0.2, { spread: 60 });
-    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-    fire(0.1, { spread: 120, startVelocity: 45 });
-  };
 
   const isNew = (timestamp: number) => {
     const isNewHack = (Date.now() - timestamp) < (7 * 24 * 60 * 60 * 1000);
@@ -326,8 +306,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
           {/* Profile Card */}
           <div className="glass-panel p-6 rounded-2xl animate-slide-up">
             <div className="relative mb-6">
-              <div className={`w-20 h-20 bg-gradient-to-br ${getAvatarGradient(user.profilePicture)} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
-                {React.createElement(getAvatarIcon(user.profilePicture), { size: 36 })}
+              <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg border border-slate-800">
+                {avatar.type === 'google' ? (
+                  <img
+                    src={avatar.src}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${avatar.gradient}`}
+                  >
+                    <avatar.icon size={36} className="text-white" />
+                  </div>
+                )}
               </div>
               <div className="absolute -bottom-2 -right-2 bg-slate-900 border border-slate-700 rounded-full p-1.5">
                 <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>

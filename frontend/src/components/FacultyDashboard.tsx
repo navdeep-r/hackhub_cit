@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
-import { Plus, Trash2, Edit, Sparkles, Users, Eye, TrendingUp, Calendar, MapPin, Link as LinkIcon, Clock, Globe, CheckSquare, Square, LayoutDashboard, BarChart3, PenTool, ArrowLeft, Info } from 'lucide-react';
-import { Hackathon, Registration, AnalyticsData } from '../types';
-import { getHackathons, saveHackathon, deleteHackathon, getRegistrations, generateHackathonDescription, analyzeEngagementTrends, getAllStudents } from '../services/api';
+import { ArrowLeft, BarChart3, Calendar, CheckSquare, Clock, Edit, Eye, Globe, Info, LayoutDashboard, Link as LinkIcon, MapPin, Plus, Sparkles, Square, Trash2, TrendingUp, Users } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { deleteHackathon, getAllStudents, getHackathons, getRegistrations, saveHackathon } from '../services/api';
+import { AnalyticsData, Hackathon, Registration } from '../types';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { ErrorModal } from './ErrorModal';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { RegistrationsModal } from './RegistrationsModal';
-import { ErrorModal } from './ErrorModal';
 
 // External Utilities
-import { canonicalURL } from '../utils/canonicalURL.ts'
+import { canonicalURL } from '../utils/canonicalURL.ts';
 
 // Utility function to truncate text to a specific word count
 const truncateTextByWords = (text: string, maxWords: number): string => {
@@ -181,7 +181,6 @@ export const FacultyDashboard: React.FC = () => {
         tags: formData.categories || []
       };
 
-      const savedHackathon = await saveHackathon(newHackathon);
       setActiveTab('list');
       setFormData({ platform: 'Unstop', categories: [] });
       // Add a small delay to ensure database persistence

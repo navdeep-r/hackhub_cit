@@ -16,7 +16,7 @@ registrations.post('/', async (req, res) => {
         }
 
         // Extract registration data from request body
-        const { studentId, studentName, email, hackathonId } = req.body;
+        const { studentId } = req.body;
 
         // If studentId is provided, fetch department and section from user data
         let department = '';

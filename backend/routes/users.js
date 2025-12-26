@@ -7,7 +7,7 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || process.env.SHOW_LOGS == '1';
 
-users.get('/students', async (req, res) => {
+users.get('/students', async (_req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
             return res.status(500).json({ error: 'Database not connected' });
