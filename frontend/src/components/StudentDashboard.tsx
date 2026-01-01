@@ -1,4 +1,4 @@
-import { ArrowRight, Award, Bell, BookOpen, Calendar, CheckCircle, Clock, Compass, ExternalLink, FileText, Globe, MapPin, RefreshCw, Search, Tag, Trophy, X } from 'lucide-react';
+import { ArrowRight, Award, Bell, BookOpen, Calendar, CheckCircle, Clock, Compass, ExternalLink, FileText, Globe, LayoutGrid, MapPin, RefreshCw, Search, Table, Tag, Trophy, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { resolveProfilePicture } from '../utils/profilePicture';
 import { FilterPanel } from './FilterPanel';
@@ -59,6 +59,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
   const [viewedHackathons, setViewedHackathons] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+
+  // View Mode State
+  const [viewMode, setViewMode] = useState<'card' | 'excel'>('card');
 
   // Filter states
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -374,6 +377,29 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
+            {/* View Toggle Group */}
+            <div className="flex bg-slate-900 border border-slate-700 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setViewMode('card')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'card'
+                  ? 'bg-slate-800 text-cyan-400 shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                title="Card View"
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('excel')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'excel'
+                  ? 'bg-slate-800 text-cyan-400 shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                title="Excel View"
+              >
+                <Table size={18} />
+              </button>
+            </div>
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -415,118 +441,230 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 animate-slide-up-delay-1">
-          {displayedHackathons.length === 0 && (
-            <div className="text-center py-12 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
-              <p>No hackathons found in this section.</p>
-            </div>
-          )}
 
-          {displayedHackathons.map(h => {
-            const isRegistered = myRegistrationIds.includes(h.id);
-            return (
-              <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-52 overflow-hidden border border-slate-800/60 cursor-pointer">
-                {/* Gradient Header / Side Panel */}
-                <div className="w-full md:w-40 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-3 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
-                      {h.platform}
-                    </span>
-                    {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && (
-                      <span className="new-badge relative flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white border-2 border-yellow-400/70 backdrop-blur-sm overflow-hidden group/badge">
-                        {/* Animated gradient background */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-yellow-500/80 via-amber-400/80 to-yellow-500/80 opacity-90"></span>
+        {viewMode === 'card' ? (
+          <div className="grid grid-cols-1 gap-4 animate-slide-up-delay-1">
+            {displayedHackathons.length === 0 && (
+              <div className="text-center py-12 text-slate-500 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
+                <p>No hackathons found in this section.</p>
+              </div>
+            )}
 
-                        {/* Shimmer overlay */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover/badge:opacity-100 transition-opacity duration-500"></span>
-
-                        {/* Content */}
-                        <Bell size={10} className="relative z-10 drop-shadow-sm animate-pulse" />
-                        <span className="relative z-10 tracking-wider drop-shadow-sm">NEW</span>
-
-                        {/* Sparkle effect */}
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-200 rounded-full opacity-70 blur-[1px] animate-ping"></span>
+            {displayedHackathons.map(h => {
+              const isRegistered = myRegistrationIds.includes(h.id);
+              return (
+                <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-52 overflow-hidden border border-slate-800/60 cursor-pointer">
+                  {/* Gradient Header / Side Panel */}
+                  <div className="w-full md:w-40 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-3 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
+                        {h.platform}
                       </span>
-                    )}
-                    {isRegistered && (
-                      <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        <CheckCircle size={9} /> GOING
-                      </span>
-                    )}
-                  </div>
+                      {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && (
+                        <span className="new-badge relative flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white border-2 border-yellow-400/70 backdrop-blur-sm overflow-hidden group/badge">
+                          {/* Animated gradient background */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-yellow-500/80 via-amber-400/80 to-yellow-500/80 opacity-90"></span>
 
-                  {/* Categories in Side Panel for Desktop */}
-                  <div className="hidden md:flex flex-wrap gap-1 mt-auto">
-                    {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                      <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
-                        {cat}
-                      </span>
-                    ))}
-                    {h.categories && h.categories.length > 2 && (
-                      <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
-                    )}
-                  </div>
-                </div>
+                          {/* Shimmer overlay */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover/badge:opacity-100 transition-opacity duration-500"></span>
 
-                {/* Card Body */}
-                <div className="p-3 flex-1 flex flex-col relative">
-                  <div className="pr-10 mb-2 flex-1 flex flex-col">
-                    <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
-                    <div className="flex-1 flex items-center">
-                      <p className="text-slate-400 text-sm leading-tight line-clamp-1" title={h.description}>
-                        {h.description || 'No description provided.'}
-                      </p>
-                    </div>
-                  </div>
+                          {/* Content */}
+                          <Bell size={10} className="relative z-10 drop-shadow-sm animate-pulse" />
+                          <span className="relative z-10 tracking-wider drop-shadow-sm">NEW</span>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-cyan-400 shrink-0" />
-                      <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          {/* Sparkle effect */}
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-200 rounded-full opacity-70 blur-[1px] animate-ping"></span>
+                        </span>
+                      )}
+                      {isRegistered && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <CheckCircle size={9} /> GOING
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={14} className="text-cyan-400 shrink-0" />
-                      <span className="truncate">{h.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Trophy size={14} className="text-yellow-400 shrink-0" />
-                      <span className="truncate">{h.prizePool}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-orange-400 shrink-0" />
-                      <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex-1"></div>
-
-                  {/* Action Row */}
-                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800/50">
-                    <div className="flex md:hidden flex-wrap gap-1">
+                    {/* Categories in Side Panel for Desktop */}
+                    <div className="hidden md:flex flex-wrap gap-1 mt-auto">
                       {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-slate-800/50 text-slate-400 text-[9px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                        <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
                           {cat}
                         </span>
                       ))}
-                    </div>
-
-                    <div className="ml-auto">
-                      {isRegistered ? (
-                        <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium border border-slate-700 flex items-center gap-1.5 cursor-default">
-                          <CheckCircle size={14} /> Registered
-                        </button>
-                      ) : (
-                        <button className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-1.5 group-hover:scale-105">
-                          View Details <ArrowRight size={14} />
-                        </button>
+                      {h.categories && h.categories.length > 2 && (
+                        <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
                       )}
                     </div>
                   </div>
+
+                  {/* Card Body */}
+                  <div className="p-3 flex-1 flex flex-col relative">
+                    <div className="pr-10 mb-2 flex-1 flex flex-col">
+                      <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
+                      <div className="flex-1 flex items-center">
+                        <p className="text-slate-400 text-sm leading-tight line-clamp-1" title={h.description}>
+                          {h.description || 'No description provided.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-cyan-400 shrink-0" />
+                        <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} className="text-cyan-400 shrink-0" />
+                        <span className="truncate">{h.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Trophy size={14} className="text-yellow-400 shrink-0" />
+                        <span className="truncate">{h.prizePool}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} className="text-orange-400 shrink-0" />
+                        <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1"></div>
+
+                    {/* Action Row */}
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800/50">
+                      <div className="flex md:hidden flex-wrap gap-1">
+                        {h.categories && h.categories.slice(0, 2).map((cat, i) => (
+                          <span key={i} className="px-1.5 py-0.5 bg-slate-800/50 text-slate-400 text-[9px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="ml-auto">
+                        {isRegistered ? (
+                          <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium border border-slate-700 flex items-center gap-1.5 cursor-default">
+                            <CheckCircle size={14} /> Registered
+                          </button>
+                        ) : (
+                          <button className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-1.5 group-hover:scale-105">
+                            View Details <ArrowRight size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Excel (Table) View */
+          <div className="overflow-hidden rounded-2xl glass-panel border border-slate-800/60 animate-slide-up-delay-1">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-400">
+                <thead className="bg-slate-900/50 text-xs uppercase text-slate-400 font-bold tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Hackathon</th>
+                    <th className="px-6 py-4">End Date</th>
+                    <th className="px-6 py-4">Days Left</th>
+                    <th className="px-6 py-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {displayedHackathons.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                        No hackathons found in this section.
+                      </td>
+                    </tr>
+                  ) : (
+                    displayedHackathons.map(h => {
+                      const isRegistered = myRegistrationIds.includes(h.id);
+
+                      // Calculate days left
+                      let daysLeft: number | null = null;
+                      let daysLeftColor = 'text-slate-400';
+
+                      if (h.registrationDeadline) {
+                        const now = Date.now();
+                        const deadline = new Date(h.registrationDeadline).getTime();
+                        const diff = deadline - now;
+
+                        if (diff > 0) {
+                          daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+                          if (daysLeft <= 3) daysLeftColor = 'text-red-400 font-bold';
+                          else if (daysLeft <= 7) daysLeftColor = 'text-orange-400 font-bold';
+                          else daysLeftColor = 'text-emerald-400 font-bold';
+                        }
+                      }
+
+                      return (
+                        <tr key={h.id} className="hover:bg-slate-800/30 transition-colors group">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-slate-900 rounded-lg border border-slate-700/50 shrink-0">
+                                <Globe size={16} className="text-cyan-400" />
+                              </div>
+                              <div>
+                                <h4
+                                  className="text-white font-medium hover:text-cyan-400 cursor-pointer transition-colors"
+                                  onClick={() => handleViewDetails(h)}
+                                >
+                                  {h.title}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs text-slate-500 bg-slate-900/50 px-1.5 py-0.5 rounded border border-slate-800">
+                                    {h.platform}
+                                  </span>
+                                  {isRegistered && (
+                                    <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
+                                      <CheckCircle size={10} /> Registered
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-slate-300">
+                                {new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {h.registrationDeadline
+                                  ? `Reg. closes ${new Date(h.registrationDeadline).toLocaleDateString()}`
+                                  : 'No set deadline'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {daysLeft !== null ? (
+                              <div className={`flex items-center gap-2 ${daysLeftColor}`}>
+                                <Clock size={14} />
+                                <span>{daysLeft} Day{daysLeft !== 1 ? 's' : ''}</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600 flex items-center gap-2">
+                                <X size={14} /> Expired
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => handleViewDetails(h)}
+                              className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 hover:bg-slate-700 hover:text-white hover:border-slate-600 transition-all"
+                            >
+                              Details
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
       {activeHackathon && (
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-3 sm:p-4 backdrop-blur-lg animate-fade-in" onClick={() => setActiveHackathon(null)}>
