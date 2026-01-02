@@ -181,6 +181,8 @@ export const FacultyDashboard: React.FC = () => {
         tags: formData.categories || []
       };
 
+      await saveHackathon(newHackathon);
+
       setActiveTab('list');
       setFormData({ platform: 'Unstop', categories: [] });
       // Add a small delay to ensure database persistence
@@ -518,112 +520,96 @@ export const FacultyDashboard: React.FC = () => {
               </div>
             )}
             {hackathons.map(h => (
-              <div key={h.id} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-900/20 flex flex-col md:flex-row h-auto md:h-56 overflow-hidden border border-slate-800/60">
-                {/* Gradient Header / Side Panel */}
-                <div className="w-full md:w-40 bg-gradient-to-br from-slate-950 via-blue-900/20 to-slate-950 relative p-3 flex flex-col justify-between group-hover:from-slate-900 group-hover:via-blue-800/30 transition-all shrink-0">
-                  <div className="absolute top-0 right-0 p-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 md:hidden">
-                    {/* Mobile Actions */}
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Info size={12} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Edit size={12} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shadow-lg">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
-                      {h.platform}
-                    </span>
-                  </div>
+              <div key={h.id} className="group relative rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 transition-all duration-300 overflow-hidden flex flex-col hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30">
 
-                  {/* Categories in Side Panel for Desktop */}
-                  <div className="hidden md:flex flex-wrap gap-1 mt-auto">
-                    {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                      <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
-                        {cat}
-                      </span>
-                    ))}
-                    {h.categories && h.categories.length > 2 && (
-                      <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
-                    )}
-                  </div>
-                </div>
+                {/* Subtle top glow effect */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                {/* Card Body */}
-                <div className="p-3 flex-1 flex flex-col relative">
-                  {/* Desktop Actions */}
-                  <div className="absolute top-3 right-3 hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" title="View Details">
-                      <Info size={14} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(h); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Edit Hackathon">
-                      <Edit size={14} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete Hackathon">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                <div className="p-5 flex flex-col h-full relative">
+                  {/* Header: Badge & Title */}
+                  <div className="flex justify-between items-start gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 shadow-sm">
+                          {h.platform}
+                        </span>
+                        {h.categories && h.categories.length > 0 && (
+                          <span className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                            {h.categories[0]}
+                            {h.categories.length > 1 && ` +${h.categories.length - 1}`}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-lg text-white truncate leading-tight tracking-tight group-hover:text-indigo-400 transition-colors" title={h.title}>
+                        {h.title}
+                      </h3>
+                    </div>
 
-                  <div className="pr-10 mb-auto flex-1 flex flex-col">
-                    <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-indigo-300 transition-colors" title={h.title}>{h.title}</h3>
-                    <div className="flex-1 flex items-center">
-                      <p className="text-slate-400 text-sm leading-tight line-clamp-3" title={h.description}>
-                        {truncateTextByWords(h.description || 'No description provided.', 20)}
-                      </p>
+                    {/* Quick Actions (Visible on Hover) */}
+                    <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedHackathon(h); setDetailsModalOpen(true); }}
+                        className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/50 transition-all"
+                      >
+                        <Info size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(h); }}
+                        className="p-2 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 transition-all"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(h.id); }}
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800/50 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-auto">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={12} className="text-indigo-400 shrink-0" />
-                      <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  {/* Description */}
+                  <p className="text-slate-400 text-xs leading-relaxed line-clamp-2 mt-1 min-h-[2.5em] font-medium opacity-80">
+                    {h.description || 'No description provided.'}
+                  </p>
+
+                  {/* Enhanced Metadata */}
+                  <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-5 pt-4 border-t border-slate-800/50">
+                    <div className="flex items-center gap-1.5 group/meta">
+                      <Calendar size={13} className="text-indigo-400 group-hover/meta:text-indigo-300 transition-colors" />
+                      <span className="font-medium">{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={12} className="text-indigo-400 shrink-0" />
-                      <span className="truncate">{h.location}</span>
+                    <div className="flex items-center gap-1.5 group/meta">
+                      <MapPin size={13} className="text-emerald-400 group-hover/meta:text-emerald-300 transition-colors" />
+                      <span className="truncate max-w-[80px] font-medium">{h.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 col-span-2">
-                      <Clock size={12} className="text-indigo-400 shrink-0" />
-                      <span className="truncate">Deadline: {new Date(h.registrationDeadline).toLocaleDateString()}</span>
+                    <div className="ml-auto flex items-center gap-1.5 text-amber-500/90 group/meta font-medium">
+                      <Clock size={13} className="group-hover/meta:text-amber-400 transition-colors" />
+                      <span>DL: {new Date(h.registrationDeadline).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}</span>
                     </div>
                   </div>
 
-                  {/* Stats Row */}
-                  <div className="flex gap-3 mt-2 pt-3 border-t border-slate-800/50">
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-slate-500 font-medium">Impressions:</span>
-                      <div className="flex items-center gap-1 text-slate-200 font-semibold">
-                        <Eye size={12} className="text-indigo-400" /> {h.impressions}
+                  {/* Premium Footer */}
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-4 text-[11px] font-medium text-slate-400">
+                      <div className="flex items-center gap-1.5 hover:text-indigo-300 transition-colors cursor-help" title="Impressions">
+                        <Eye size={14} className="text-indigo-500/80" />
+                        <span>{h.impressions}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 hover:text-cyan-300 transition-colors cursor-help" title="Registrations">
+                        <Users size={14} className="text-cyan-500/80" />
+                        <span>{registrationCountMap.get(String(h.id)) || 0}</span>
                       </div>
                     </div>
-                    <div className="h-3 w-px bg-slate-800 my-auto"></div>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-slate-500 font-medium">Registrations:</span>
-                      <div className="flex items-center gap-1 text-slate-200 font-semibold">
-                        <Users size={12} className="text-cyan-400" /> {registrationCountMap.get(String(h.id)) || 0}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* View Registrations Button */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedHackathonForRegs(h); setRegistrationsModalOpen(true); }}
-                    className="w-full mt-2 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-1 text-sm shadow-lg shadow-indigo-900/30"
-                  >
-                    <Users size={12} /> View Registrations
-                  </button>
-
-
-                  {/* Mobile Categories Footer */}
-                  <div className="flex md:hidden flex-wrap gap-2 mt-4 pt-4 border-t border-slate-800/50">
-                    {h.categories && h.categories.slice(0, 3).map((cat, i) => (
-                      <span key={i} className="px-2 py-1 bg-slate-800/50 text-slate-400 text-[10px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
-                        {cat}
-                      </span>
-                    ))}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedHackathonForRegs(h); setRegistrationsModalOpen(true); }}
+                      className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 rounded-lg text-[11px] font-bold tracking-wide transition-all flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                      <Users size={12} />
+                      REGISTRATIONS
+                    </button>
                   </div>
                 </div>
               </div>
