@@ -680,6 +680,17 @@ export const FacultyDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
+                <textarea
+                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[120px] resize-y"
+                  value={formData.description || ''}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter hackathon details, rules, and requirements..."
+                />
+              </div>
+
               {/* Row 2: Dates */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
