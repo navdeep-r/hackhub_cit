@@ -200,6 +200,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
     .filter(h => !myRegistrationIds.includes(h.id))
     .sort((a, b) => b.createdAt - a.createdAt);
 
+  // Helper to check if a hackathon is expired
+  const isExpired = (h: Hackathon) => {
+    if (!h.registrationDeadline) return false;
+    return new Date(h.registrationDeadline).getTime() < Date.now();
+  };
+
   // Apply filters: platform, deadline, and search
   const applyFilters = (hackathonList: Hackathon[]) => {
     let filtered = hackathonList;
@@ -240,16 +246,30 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
       (h.tags && h.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
     );
 
-    // Sort logic: Latest filter sorts by creation date, others sort by deadline
-    if (deadlineFilter === 'latest') {
-      filtered.sort((a, b) => b.createdAt - a.createdAt); // Most recent first
-    } else {
-      filtered.sort((a, b) => {
+    // Primary Sort: Active First, Expired Last
+    filtered.sort((a, b) => {
+      const expiredA = isExpired(a) ? 1 : 0;
+      const expiredB = isExpired(b) ? 1 : 0;
+      if (expiredA !== expiredB) return expiredA - expiredB;
+
+      // Secondary Sort
+      if (deadlineFilter === 'latest') {
+        return b.createdAt - a.createdAt; // Most recent first
+      } else {
+        // Sort by deadline
+        // For Active: Soonest deadline first (ascending)
+        // For Expired: Most recently expired first (descending)
         const deadlineA = a.registrationDeadline ? new Date(a.registrationDeadline).getTime() : Infinity;
         const deadlineB = b.registrationDeadline ? new Date(b.registrationDeadline).getTime() : Infinity;
-        return deadlineA - deadlineB; // Closest deadline first
-      });
-    }
+
+        if (expiredA === 1) {
+          // Both expired -> Descending (Recent expiry first)
+          return deadlineB - deadlineA;
+        }
+        // Both active -> Ascending (Soonest deadline first)
+        return deadlineA - deadlineB;
+      }
+    });
 
     return filtered;
   };
@@ -450,108 +470,156 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
               </div>
             )}
 
-            {displayedHackathons.map(h => {
+            {displayedHackathons.map((h, index) => {
               const isRegistered = myRegistrationIds.includes(h.id);
+              const expired = isExpired(h);
+
+              // Check for separator
+              const prevH = displayedHackathons[index - 1];
+              const isFirstExpired = expired && (!prevH || !isExpired(prevH));
+
               return (
-                <div key={h.id} onClick={() => handleViewDetails(h)} className="glass-panel rounded-2xl relative group glass-card transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20 flex flex-col md:flex-row h-auto md:h-52 overflow-hidden border border-slate-800/60 cursor-pointer">
-                  {/* Gradient Header / Side Panel */}
-                  <div className="w-full md:w-40 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 relative p-3 flex flex-col justify-between group-hover:from-cyan-600/30 group-hover:via-blue-600/30 transition-all shrink-0">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/30 text-white border border-white/10 backdrop-blur-md">
-                        {h.platform}
-                      </span>
-                      {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && (
-                        <span className="new-badge relative flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white border-2 border-yellow-400/70 backdrop-blur-sm overflow-hidden group/badge">
-                          {/* Animated gradient background */}
-                          <span className="absolute inset-0 bg-gradient-to-r from-yellow-500/80 via-amber-400/80 to-yellow-500/80 opacity-90"></span>
+                <React.Fragment key={h.id}>
+                  {isFirstExpired && (
+                    <div className="col-span-full py-6 flex items-center gap-4 animate-slide-up text-slate-500">
+                      <div className="h-px bg-slate-800 flex-1"></div>
+                      <span className="text-xs font-bold uppercase tracking-widest opacity-60">Past Events</span>
+                      <div className="h-px bg-slate-800 flex-1"></div>
+                    </div>
+                  )}
 
-                          {/* Shimmer overlay */}
-                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover/badge:opacity-100 transition-opacity duration-500"></span>
+                  <div
+                    onClick={() => handleViewDetails(h)}
+                    className={`glass-panel rounded-2xl relative group glass-card transition-all flex flex-col md:flex-row h-auto md:h-52 overflow-hidden border cursor-pointer
+                      ${expired
+                        ? 'border-red-900/20 bg-slate-900/50 hover:bg-slate-900/80 hover:border-red-900/40 grayscale-[0.2]'
+                        : 'border-slate-800/60 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-900/20'
+                      }`}
+                  >
+                    {/* Expired Overlay */}
+                    {expired && (
+                      <div className="absolute inset-0 bg-red-950/5 pointer-events-none z-10 mix-blend-overlay"></div>
+                    )}
 
-                          {/* Content */}
-                          <Bell size={10} className="relative z-10 drop-shadow-sm animate-pulse" />
-                          <span className="relative z-10 tracking-wider drop-shadow-sm">NEW</span>
-
-                          {/* Sparkle effect */}
-                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-200 rounded-full opacity-70 blur-[1px] animate-ping"></span>
+                    {/* Gradient Header / Side Panel */}
+                    <div className={`w-full md:w-40 relative p-3 flex flex-col justify-between transition-all shrink-0
+                      ${expired
+                        ? 'bg-slate-900'
+                        : 'bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-slate-900/50 group-hover:from-cyan-600/30 group-hover:via-blue-600/30'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border backdrop-blur-md
+                          ${expired ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-950/30 text-white border-white/10'}`}>
+                          {h.platform}
                         </span>
-                      )}
-                      {isRegistered && (
-                        <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          <CheckCircle size={9} /> GOING
-                        </span>
-                      )}
-                    </div>
+                        {isNew(h.createdAt) && !isRegistered && !viewedHackathons.has(h.id) && !expired && (
+                          <span className="new-badge relative flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white border-2 border-yellow-400/70 backdrop-blur-sm overflow-hidden group/badge">
+                            {/* Animated gradient background */}
+                            <span className="absolute inset-0 bg-gradient-to-r from-yellow-500/80 via-amber-400/80 to-yellow-500/80 opacity-90"></span>
 
-                    {/* Categories in Side Panel for Desktop */}
-                    <div className="hidden md:flex flex-wrap gap-1 mt-auto">
-                      {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-slate-950/30 text-slate-200 text-[9px] uppercase tracking-wide font-medium rounded-md border border-white/5">
-                          {cat}
-                        </span>
-                      ))}
-                      {h.categories && h.categories.length > 2 && (
-                        <span className="px-1.5 py-0.5 bg-slate-950/30 text-slate-300 text-[9px] font-medium rounded-md border border-white/5">+{h.categories.length - 2}</span>
-                      )}
-                    </div>
-                  </div>
+                            {/* Shimmer overlay */}
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover/badge:opacity-100 transition-opacity duration-500"></span>
 
-                  {/* Card Body */}
-                  <div className="p-3 flex-1 flex flex-col relative">
-                    <div className="pr-10 mb-2 flex-1 flex flex-col">
-                      <h3 className="font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-cyan-300 transition-colors" title={h.title}>{h.title}</h3>
-                      <div className="flex-1 flex items-center">
-                        <p className="text-slate-400 text-sm leading-tight line-clamp-1" title={h.description}>
-                          {h.description || 'No description provided.'}
-                        </p>
-                      </div>
-                    </div>
+                            {/* Content */}
+                            <Bell size={10} className="relative z-10 drop-shadow-sm animate-pulse" />
+                            <span className="relative z-10 tracking-wider drop-shadow-sm">NEW</span>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-cyan-400 shrink-0" />
-                        <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            {/* Sparkle effect */}
+                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-200 rounded-full opacity-70 blur-[1px] animate-ping"></span>
+                          </span>
+                        )}
+                        {isRegistered && (
+                          <span className={`flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full border
+                            ${expired ? 'bg-slate-800 text-emerald-500/70 border-emerald-900/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'}`}>
+                            <CheckCircle size={9} /> {expired ? 'ATTENDED' : 'GOING'}
+                          </span>
+                        )}
+                        {expired && !isRegistered && (
+                          <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-950/40 text-red-400 border border-red-900/30">
+                            <Clock size={9} /> ENDED
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-cyan-400 shrink-0" />
-                        <span className="truncate">{h.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Trophy size={14} className="text-yellow-400 shrink-0" />
-                        <span className="truncate">{h.prizePool}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-orange-400 shrink-0" />
-                        <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
-                      </div>
-                    </div>
 
-                    <div className="flex-1"></div>
-
-                    {/* Action Row */}
-                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800/50">
-                      <div className="flex md:hidden flex-wrap gap-1">
+                      {/* Categories in Side Panel for Desktop */}
+                      <div className="hidden md:flex flex-wrap gap-1 mt-auto">
                         {h.categories && h.categories.slice(0, 2).map((cat, i) => (
-                          <span key={i} className="px-1.5 py-0.5 bg-slate-800/50 text-slate-400 text-[9px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                          <span key={i} className={`px-1.5 py-0.5 text-[9px] uppercase tracking-wide font-medium rounded-md border
+                            ${expired ? 'bg-slate-900/50 text-slate-500 border-slate-700/50' : 'bg-slate-950/30 text-slate-200 border-white/5'}`}>
                             {cat}
                           </span>
                         ))}
-                      </div>
-
-                      <div className="ml-auto">
-                        {isRegistered ? (
-                          <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium border border-slate-700 flex items-center gap-1.5 cursor-default">
-                            <CheckCircle size={14} /> Registered
-                          </button>
-                        ) : (
-                          <button className="px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center gap-1.5 group-hover:scale-105">
-                            View Details <ArrowRight size={14} />
-                          </button>
+                        {h.categories && h.categories.length > 2 && (
+                          <span className={`px-1.5 py-0.5 text-[9px] font-medium rounded-md border
+                            ${expired ? 'bg-slate-900/50 text-slate-500 border-slate-700/50' : 'bg-slate-950/30 text-slate-300 border-white/5'}`}>
+                            +{h.categories.length - 2}
+                          </span>
                         )}
                       </div>
                     </div>
+
+                    {/* Card Body */}
+                    <div className="p-3 flex-1 flex flex-col relative z-20">
+                      <div className="pr-10 mb-2 flex-1 flex flex-col">
+                        <h3 className={`font-bold text-lg mb-1 line-clamp-1 transition-colors ${expired ? 'text-slate-300' : 'text-white group-hover:text-cyan-300'}`} title={h.title}>{h.title}</h3>
+                        <div className="flex-1 flex items-center">
+                          <p className={`text-sm leading-tight line-clamp-1 ${expired ? 'text-slate-500' : 'text-slate-400'}`} title={h.description}>
+                            {h.description || 'No description provided.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className={`grid grid-cols-2 gap-2 text-xs mb-2 ${expired ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className={`${expired ? 'text-slate-600' : 'text-cyan-400'} shrink-0`} />
+                          <span>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className={`${expired ? 'text-slate-600' : 'text-cyan-400'} shrink-0`} />
+                          <span className="truncate">{h.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Trophy size={14} className={`${expired ? 'text-slate-600' : 'text-yellow-400'} shrink-0`} />
+                          <span className="truncate">{h.prizePool}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className={`${expired ? 'text-slate-600' : 'text-orange-400'} shrink-0`} />
+                          <span className="truncate">Deadline: {h.registrationDeadline ? new Date(h.registrationDeadline).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex-1"></div>
+
+                      {/* Action Row */}
+                      <div className={`flex justify-between items-center mt-4 pt-3 border-t ${expired ? 'border-slate-800/30' : 'border-slate-800/50'}`}>
+                        <div className="flex md:hidden flex-wrap gap-1">
+                          {h.categories && h.categories.slice(0, 2).map((cat, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-slate-800/50 text-slate-400 text-[9px] uppercase tracking-wide font-medium rounded-md border border-slate-700/50">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="ml-auto">
+                          {isRegistered ? (
+                            <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium border border-slate-700 flex items-center gap-1.5 cursor-default">
+                              <CheckCircle size={14} /> Registered
+                            </button>
+                          ) : (
+                            <button className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 
+                              ${expired
+                                ? 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'
+                                : 'bg-cyan-600 text-white hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 group-hover:scale-105'
+                              }`}>
+                              {expired ? 'View Details' : 'View Details'} {!expired && <ArrowRight size={14} />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
@@ -576,8 +644,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
                       </td>
                     </tr>
                   ) : (
-                    displayedHackathons.map(h => {
+                    displayedHackathons.map((h, index) => {
                       const isRegistered = myRegistrationIds.includes(h.id);
+
+                      // Check for separator
+                      const expired = isExpired(h);
+                      const prevH = displayedHackathons[index - 1];
+                      const isFirstExpired = expired && (!prevH || !isExpired(prevH));
 
                       // Calculate days left
                       let daysLeft: number | null = null;
@@ -598,65 +671,96 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
                       }
 
                       return (
-                        <tr key={h.id} className="hover:bg-slate-800/30 transition-colors group">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-slate-900 rounded-lg border border-slate-700/50 shrink-0">
-                                <Globe size={16} className="text-cyan-400" />
-                              </div>
-                              <div>
-                                <h4
-                                  className="text-white font-medium hover:text-cyan-400 cursor-pointer transition-colors"
-                                  onClick={() => handleViewDetails(h)}
-                                >
-                                  {h.title}
-                                </h4>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-xs text-slate-500 bg-slate-900/50 px-1.5 py-0.5 rounded border border-slate-800">
-                                    {h.platform}
+                        <React.Fragment key={h.id}>
+                          {isFirstExpired && (
+                            <tr className="bg-slate-950/30">
+                              <td colSpan={4} className="px-6 py-3 border-y border-red-900/20">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-px bg-red-900/20 flex-1"></div>
+                                  <span className="text-[10px] bg-red-950/40 text-red-400/60 px-2 py-0.5 rounded border border-red-900/20 uppercase font-bold tracking-wider">
+                                    Past Events
                                   </span>
-                                  {isRegistered && (
-                                    <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
-                                      <CheckCircle size={10} /> Registered
+                                  <div className="h-px bg-red-900/20 flex-1"></div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          <tr className={`transition-colors group
+                            ${expired
+                              ? 'bg-red-950/5 hover:bg-slate-900/80 hover:border-l-2 hover:border-l-red-500/20'
+                              : 'hover:bg-slate-800/30'
+                            }`}>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg border shrink-0
+                                  ${expired
+                                    ? 'bg-slate-900 border-slate-800 opacity-60'
+                                    : 'bg-slate-900 border-slate-700/50'}`}>
+                                  <Globe size={16} className={`${expired ? 'text-slate-500' : 'text-cyan-400'}`} />
+                                </div>
+                                <div className={expired ? 'opacity-70' : ''}>
+                                  <h4
+                                    className={`font-medium cursor-pointer transition-colors
+                                      ${expired ? 'text-slate-400 hover:text-slate-200' : 'text-white hover:text-cyan-400'}`}
+                                    onClick={() => handleViewDetails(h)}
+                                  >
+                                    {h.title}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`text-xs px-1.5 py-0.5 rounded border
+                                      ${expired
+                                        ? 'text-slate-600 bg-slate-900 border-slate-800'
+                                        : 'text-slate-500 bg-slate-900/50 border-slate-800'}`}>
+                                      {h.platform}
                                     </span>
-                                  )}
+                                    {isRegistered && (
+                                      <span className={`text-[10px] flex items-center gap-0.5
+                                        ${expired ? 'text-emerald-500/60' : 'text-emerald-400'}`}>
+                                        <CheckCircle size={10} /> Registered
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-slate-300">
-                                {new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </span>
-                              <span className="text-xs text-slate-500">
-                                {h.registrationDeadline
-                                  ? `Reg. closes ${new Date(h.registrationDeadline).toLocaleDateString()}`
-                                  : 'No set deadline'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {daysLeft !== null ? (
-                              <div className={`flex items-center gap-2 ${daysLeftColor}`}>
-                                <Clock size={14} />
-                                <span>{daysLeft} Day{daysLeft !== 1 ? 's' : ''}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className={`flex flex-col ${expired ? 'opacity-60' : ''}`}>
+                                <span className="text-slate-300">
+                                  {new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <span className={`text-xs ${expired ? 'text-slate-600' : 'text-slate-500'}`}>
+                                  {h.registrationDeadline
+                                    ? `Reg. closes ${new Date(h.registrationDeadline).toLocaleDateString()}`
+                                    : 'No set deadline'}
+                                </span>
                               </div>
-                            ) : (
-                              <span className="text-slate-600 flex items-center gap-2">
-                                <X size={14} /> Expired
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => handleViewDetails(h)}
-                              className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 hover:bg-slate-700 hover:text-white hover:border-slate-600 transition-all"
-                            >
-                              Details
-                            </button>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {daysLeft !== null ? (
+                                <div className={`flex items-center gap-2 ${daysLeftColor}`}>
+                                  <Clock size={14} />
+                                  <span>{daysLeft} Day{daysLeft !== 1 ? 's' : ''}</span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-600 flex items-center gap-2 font-medium">
+                                  <X size={14} /> Expired
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => handleViewDetails(h)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all
+                                  ${expired
+                                    ? 'bg-slate-900 text-slate-500 border-slate-800 hover:text-slate-300'
+                                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white hover:border-slate-600'
+                                  }`}
+                              >
+                                Details
+                              </button>
+                            </td>
+                          </tr>
+                        </React.Fragment>
                       );
                     })
                   )}
