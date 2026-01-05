@@ -65,7 +65,6 @@ extension_webhook.post('/', async (req, res) => {
         }
 
         // create registration
-        // create registration
         const reg = new Registration({
             studentId: user._id.toString(),
             studentName: user.name,
