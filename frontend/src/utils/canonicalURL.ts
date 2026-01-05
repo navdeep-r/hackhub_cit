@@ -1,3 +1,6 @@
+/**
+ * Helper to normalize hackathon URL 
+ */
 function canonicalURL(url: string): string {
     let raw = new URL(url);
 

@@ -11,14 +11,6 @@ import { RegistrationsModal } from './RegistrationsModal';
 // External Utilities
 import { canonicalURL } from '../utils/canonicalURL.ts';
 
-// Utility function to truncate text to a specific word count
-const truncateTextByWords = (text: string, maxWords: number): string => {
-  if (!text || typeof text !== 'string') return 'No description provided.';
-  const words = text.trim().split(/\s+/).filter(word => word.length > 0); // Split by any whitespace and trim, filter out empty words
-  if (words.length <= maxWords) return text.trim();
-  return words.slice(0, maxWords).join(' ') + '...';
-};
-
 const CATEGORY_OPTIONS = ['AI/ML/DS', 'WEB DEV', 'BLOCKCHAIN', 'IOT', 'CYBERSECURITY', 'MOBILE DEV', 'OTHER'];
 const PLATFORM_OPTIONS = ['Unstop', 'DoraHacks', 'HackerEarth', 'Devpost', 'Devfolio', 'Hack2Skill', 'Others'];
 

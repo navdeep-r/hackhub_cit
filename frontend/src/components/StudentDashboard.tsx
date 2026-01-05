@@ -1,48 +1,14 @@
 import { ArrowRight, Award, Bell, BookOpen, Calendar, CheckCircle, Clock, Compass, ExternalLink, FileText, Globe, LayoutGrid, MapPin, RefreshCw, Search, Table, Tag, Trophy, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { getHackathons, getRegistrations, incrementImpression } from '../services/api';
+import { Hackathon, Registration, User } from '../types';
+import { isExpired } from '../utils/isExpired';
 import { resolveProfilePicture } from '../utils/profilePicture';
 import { FilterPanel } from './FilterPanel';
 
 const NODE_ENV = import.meta.env.NODE_ENV || "development";
 const isProduction = NODE_ENV == "production";
 const SHOW_LOGS = (!isProduction) || import.meta.env.SHOW_LOGS == '1';
-
-// Utility function to truncate text to a specific word count
-// const truncateTextByWords = (text: string, maxWords: number): string => {
-//   if (!text || typeof text !== 'string') return 'No description provided.';
-//   const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-//   if (words.length <= maxWords) return text.trim();
-//   return words.slice(0, maxWords).join(' ') + '...';
-// };
-
-import { getHackathons, getRegistrations, incrementImpression } from '../services/api';
-import { Hackathon, Registration, User } from '../types';
-// @ts-ignore
-import confetti from 'canvas-confetti';
-
-// Avatar helper functions
-// const AVATAR_MAP: Record<string, { icon: any, gradient: string }> = {
-//   'code-indigo': { icon: Code, gradient: 'from-indigo-500 to-purple-600' },
-//   'rocket-cyan': { icon: Rocket, gradient: 'from-cyan-500 to-blue-600' },
-//   'star-pink': { icon: Star, gradient: 'from-pink-500 to-rose-600' },
-//   'zap-yellow': { icon: Zap, gradient: 'from-yellow-500 to-orange-600' },
-//   'heart-red': { icon: Heart, gradient: 'from-red-500 to-pink-600' },
-//   'music-purple': { icon: Music, gradient: 'from-purple-500 to-indigo-600' },
-//   'palette-teal': { icon: Palette, gradient: 'from-teal-500 to-emerald-600' },
-//   'coffee-amber': { icon: Coffee, gradient: 'from-amber-500 to-orange-600' },
-//   'gamepad-violet': { icon: Gamepad2, gradient: 'from-violet-500 to-purple-600' },
-//   'book-emerald': { icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
-//   'camera-sky': { icon: Camera, gradient: 'from-sky-500 to-cyan-600' },
-//   'trophy-gold': { icon: Trophy, gradient: 'from-yellow-500 to-amber-600' },
-// };
-
-// const getAvatarIcon = (avatarId?: string) => {
-//   return AVATAR_MAP[avatarId || 'code-indigo']?.icon || Code;
-// };
-
-// const getAvatarGradient = (avatarId?: string) => {
-//   return AVATAR_MAP[avatarId || 'code-indigo']?.gradient || 'from-indigo-500 to-purple-600';
-// };
 
 interface StudentDashboardProps {
   user: User;
@@ -199,12 +165,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
   const unregisteredHackathons = hackathons
     .filter(h => !myRegistrationIds.includes(h.id))
     .sort((a, b) => b.createdAt - a.createdAt);
-
-  // Helper to check if a hackathon is expired
-  const isExpired = (h: Hackathon) => {
-    if (!h.registrationDeadline) return false;
-    return new Date(h.registrationDeadline).getTime() < Date.now();
-  };
 
   // Apply filters: platform, deadline, and search
   const applyFilters = (hackathonList: Hackathon[]) => {
@@ -1010,7 +970,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onNoti
                     className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-2 border border-cyan-500/50"
                   >
                     <CheckCircle size={18} />
-                    Confirm Registration
+                    {isExpired(activeHackathon) ? "Confirm Participation" : "Confirm Registration"}
                   </a>
                 )}
 
