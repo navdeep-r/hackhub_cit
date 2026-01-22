@@ -4,7 +4,7 @@
 function canonicalURL(url: string): string {
     let raw = new URL(url);
 
-    if (raw.hostname.endsWith('devfolio.co')) return `https://${raw.hostname}/`;
+    if (raw.hostname.endsWith('devpost.com') || raw.hostname.endsWith('devfolio.co')) return `https://${raw.hostname}/`;
 
     if (raw.hostname == 'dorahacks.io') {
         const match = raw.pathname.match(/^\/hackathon\/([^/]+)/);
@@ -17,7 +17,6 @@ function canonicalURL(url: string): string {
 
         if (match) return `https://vision.hack2skill.com/event/${match[1]}`;
     }
-
 
     return `https://${raw.hostname}${raw.pathname}`;
 }
